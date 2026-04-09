@@ -1,0 +1,25 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "walli-api",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-04-08",
+	"observability": {
+		"enabled": true
+	},
+	"vars": {
+		"CDN_BASE_URL": "https://pub-16e2f4221ffe4c17a5607574500e442a.r2.dev"
+	},
+	"r2_buckets": [
+		{
+			"binding": "ASSETS",
+			"bucket_name": "walli-assets"
+		}
+	],
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "walli-db",
+			"database_id": "d13a16bc-13c6-400e-875e-a9752aab5f37"
+		}
+	]
+}

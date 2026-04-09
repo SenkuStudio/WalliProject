@@ -1,0 +1,14 @@
+{
+  "name": "walli-cloudflare-worker",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:migrate": "wrangler d1 execute walli-db --file=./schema.sql",
+    "db:seed": "wrangler d1 execute walli-db --file=./seed.sql"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "wrangler": "^4.9.1"
+  }
+}

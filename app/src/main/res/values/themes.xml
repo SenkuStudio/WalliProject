@@ -1,0 +1,13 @@
+<resources>
+    <style name="Theme.Walli" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
+    <style name="Theme.Walli.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="windowSplashScreenBackground">@color/walli_splash_icon_bg</item>
+        <item name="postSplashScreenTheme">@style/Theme.Walli</item>
+    </style>
+</resources>
