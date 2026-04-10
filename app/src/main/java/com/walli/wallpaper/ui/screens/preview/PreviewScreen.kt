@@ -11,12 +11,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -46,11 +48,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -66,7 +70,6 @@ import com.walli.wallpaper.domain.model.WallpaperTarget
 import com.walli.wallpaper.ui.components.EmptyState
 import com.walli.wallpaper.util.findActivity
 import kotlinx.coroutines.flow.collectLatest
-import androidx.compose.runtime.snapshotFlow
 
 @Composable
 fun PreviewRoute(
@@ -99,17 +102,21 @@ fun PreviewRoute(
 
     val pagerState = rememberPagerState(
         initialPage = state.initialIndex.coerceIn(0, state.items.lastIndex),
-        pageCount = { state.items.size },
+        pageCount = { 
+            if (state.items.isEmpty()) 0 else Int.MAX_VALUE 
+        },
     )
 
     LaunchedEffect(pagerState, state.items) {
         snapshotFlow { pagerState.settledPage }.collectLatest { page ->
-            viewModel.onPageSettled(page)
+            if (state.items.isEmpty()) return@collectLatest
+            val actualPage = page % state.items.size
+            viewModel.onPageSettled(actualPage)
             preloadAdjacentImages(
                 context = context,
                 urls = listOfNotNull(
-                    state.items.getOrNull(page - 1)?.imageUrl,
-                    state.items.getOrNull(page + 1)?.imageUrl,
+                    state.items.getOrNull((actualPage - 1 + state.items.size) % state.items.size)?.imageUrl,
+                    state.items.getOrNull((actualPage + 1) % state.items.size)?.imageUrl,
                 ),
             )
         }
@@ -125,8 +132,9 @@ fun PreviewRoute(
                     FilledTonalButton(
                         onClick = {
                             showSetSheet = false
-                            val action = { viewModel.applyWallpaper(pagerState.currentPage, target) }
-                            val current = state.items[pagerState.currentPage]
+                            val actualPage = pagerState.currentPage % state.items.size
+                            val action = { viewModel.applyWallpaper(actualPage, target) }
+                            val current = state.items[actualPage]
                             if (current.isPremium) {
                                 adsViewModel.showRewarded(activity, onReward = action)
                             } else {
@@ -157,7 +165,9 @@ fun PreviewRoute(
                 beyondViewportPageCount = 1,
                 modifier = Modifier.fillMaxSize(),
             ) { page ->
-                val wallpaper = state.items[page]
+                if (state.items.isEmpty()) return@HorizontalPager
+                val actualPage = page % state.items.size
+                val wallpaper = state.items[actualPage]
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -199,7 +209,9 @@ fun PreviewRoute(
                 visible = state.controlsVisible,
                 modifier = Modifier.align(Alignment.TopCenter),
             ) {
-                val current = state.items[pagerState.currentPage]
+                if (state.items.isEmpty()) return@AnimatedVisibility
+                val actualPage = pagerState.currentPage % state.items.size
+                val current = state.items[actualPage]
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -231,7 +243,7 @@ fun PreviewRoute(
                         color = Color.Black.copy(alpha = 0.3f),
                     ) {
                         Text(
-                            text = "${pagerState.currentPage + 1}/${state.items.size}",
+                            text = "${actualPage + 1}/${state.items.size}",
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                             color = Color.White,
                         )
@@ -243,7 +255,9 @@ fun PreviewRoute(
                 visible = state.controlsVisible,
                 modifier = Modifier.align(Alignment.BottomCenter),
             ) {
-                val current = state.items[pagerState.currentPage]
+                if (state.items.isEmpty()) return@AnimatedVisibility
+                val actualPage = pagerState.currentPage % state.items.size
+                val current = state.items[actualPage]
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -261,14 +275,18 @@ fun PreviewRoute(
                                 modifier = Modifier.padding(bottom = 12.dp),
                             )
                         }
+                        
+                        val screenWidth = LocalConfiguration.current.screenWidthDp
+                        val showLabels = screenWidth > 360
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             FilledTonalButton(
                                 onClick = {
-                                    val action = { viewModel.download(pagerState.currentPage) }
+                                    val action = { viewModel.download(actualPage) }
                                     if (current.isPremium) {
                                         adsViewModel.showRewarded(activity, onReward = action)
                                     } else {
@@ -276,18 +294,49 @@ fun PreviewRoute(
                                     }
                                 },
                                 modifier = Modifier.weight(1f),
+                                contentPadding = PaddingValues(horizontal = if (showLabels) 12.dp else 8.dp)
                             ) {
-                                Icon(Icons.Rounded.Download, contentDescription = null)
-                                Text(" Download")
+                                Icon(
+                                    imageVector = Icons.Rounded.Download,
+                                    contentDescription = "Download",
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                if (showLabels) {
+                                    Spacer(Modifier.width(6.dp))
+                                    Text(
+                                        text = "Download",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        softWrap = false
+                                    )
+                                }
                             }
                             FilledTonalButton(
                                 onClick = { showSetSheet = true },
                                 modifier = Modifier.weight(1f),
+                                contentPadding = PaddingValues(horizontal = if (showLabels) 12.dp else 8.dp)
                             ) {
-                                Icon(Icons.Rounded.Wallpaper, contentDescription = null)
-                                Text(" Set")
+                                Icon(
+                                    imageVector = Icons.Rounded.Wallpaper,
+                                    contentDescription = "Set",
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                if (showLabels) {
+                                    Spacer(Modifier.width(6.dp))
+                                    Text(
+                                        text = "Set",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        softWrap = false
+                                    )
+                                }
                             }
-                            FilledIconButton(onClick = { viewModel.toggleFavorite(pagerState.currentPage) }) {
+                            FilledIconButton(
+                                onClick = { viewModel.toggleFavorite(actualPage) },
+                                modifier = Modifier.size(44.dp)
+                            ) {
                                 Icon(
                                     imageVector = if (current.isFavorite) {
                                         Icons.Rounded.Favorite
@@ -295,10 +344,18 @@ fun PreviewRoute(
                                         Icons.Rounded.FavoriteBorder
                                     },
                                     contentDescription = "Favorite",
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
-                            FilledIconButton(onClick = { viewModel.share(pagerState.currentPage) }) {
-                                Icon(Icons.Rounded.Share, contentDescription = "Share")
+                            FilledIconButton(
+                                onClick = { viewModel.share(actualPage) },
+                                modifier = Modifier.size(44.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Share,
+                                    contentDescription = "Share",
+                                    modifier = Modifier.size(20.dp)
+                                )
                             }
                         }
                         Row(
