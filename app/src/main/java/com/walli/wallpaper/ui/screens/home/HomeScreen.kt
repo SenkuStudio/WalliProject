@@ -263,12 +263,6 @@ private fun HomeHeader(
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
         )
-        Text(
-            text = "Cloudflare-backed delivery, sharp thumbnails, and fluid preview swipes.",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 6.dp, bottom = 18.dp),
-        )
         Surface(
             shape = RoundedCornerShape(28.dp),
             tonalElevation = 4.dp,
