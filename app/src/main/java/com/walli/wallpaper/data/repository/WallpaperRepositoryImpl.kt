@@ -29,15 +29,15 @@ class WallpaperRepositoryImpl @Inject constructor(
             sort = sort.apiValue,
         )
         PagedResult(
-            items = response.items.mapNotNull { it.toDomainOrNull() },
-            page = response.page,
-            limit = response.limit,
-            hasNext = response.hasNext,
+            items = response.data.mapNotNull { it.toDomainOrNull() },
+            page = response.pagination?.page ?: page,
+            limit = response.pagination?.perPage ?: limit,
+            hasNext = response.pagination?.hasNext ?: false,
         )
     }
 
     override suspend fun getCategories(): Result<List<WallpaperCategory>> = runCatching {
-        api.getCategories()
+        api.getCategories().data
             .map { it.toDomain() }
             .sortedBy { it.name }
     }

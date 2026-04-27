@@ -1,8 +1,9 @@
 package com.walli.wallpaper.data.api
 
+import com.walli.wallpaper.data.api.model.ApiResponse
 import com.walli.wallpaper.data.api.model.CategoryDto
 import com.walli.wallpaper.data.api.model.DownloadAckDto
-import com.walli.wallpaper.data.api.model.WallpaperPageDto
+import com.walli.wallpaper.data.api.model.WallpaperDto
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
@@ -16,10 +17,10 @@ interface WallpaperApi {
         @Query("category") category: String? = null,
         @Query("query") query: String? = null,
         @Query("sort") sort: String? = null,
-    ): WallpaperPageDto
+    ): ApiResponse<List<WallpaperDto>>
 
     @GET("api/v1/categories")
-    suspend fun getCategories(): List<CategoryDto>
+    suspend fun getCategories(): ApiResponse<List<CategoryDto>>
 
     @POST("api/v1/wallpapers/{id}/download")
     suspend fun incrementDownload(@Path("id") wallpaperId: String): DownloadAckDto

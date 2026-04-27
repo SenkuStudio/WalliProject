@@ -19,8 +19,8 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
 
-        buildConfigField("String", "BASE_URL", "\"https://walli-api.skstudioapp7.workers.dev/\"")
-        buildConfigField("String", "API_KEY", "\"\"")
+        buildConfigField("String", "BASE_URL", "\"https://10.156.26.23/walli-php-backend/\"")
+        buildConfigField("String", "API_KEY", "\"wapi_109ae2701211bcffa038ce05ac160cba82d440c941af9070\"")
         buildConfigField("String", "ADMOB_BANNER_ID", "\"ca-app-pub-3940256099942544/9214589741\"")
         buildConfigField("String", "ADMOB_INTERSTITIAL_ID", "\"ca-app-pub-3940256099942544/1033173712\"")
         buildConfigField("String", "ADMOB_REWARDED_ID", "\"ca-app-pub-3940256099942544/5224354917\"")

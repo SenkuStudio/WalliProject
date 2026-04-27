@@ -12,12 +12,12 @@ internal fun WallpaperDto.toDomainOrNull(): Wallpaper? {
     return Wallpaper(
         id = id,
         title = title.ifBlank { "Untitled" },
-        category = category.ifBlank { "Uncategorized" },
+        category = category.name.ifBlank { "Uncategorized" },
         imageUrl = imageUrl,
         thumbnailUrl = thumbnailUrl,
         downloads = downloads,
         createdAt = createdAt,
-        isPremium = premium,
+        isPremium = isFeatured,
     )
 }
 

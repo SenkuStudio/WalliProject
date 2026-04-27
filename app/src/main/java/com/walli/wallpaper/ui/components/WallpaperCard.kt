@@ -33,6 +33,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.walli.wallpaper.domain.model.Wallpaper
+import com.walli.wallpaper.util.toResizedImageUrl
 
 @Composable
 fun WallpaperCard(
