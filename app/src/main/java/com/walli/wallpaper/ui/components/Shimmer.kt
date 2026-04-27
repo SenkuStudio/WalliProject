@@ -1,42 +1,82 @@
 package com.walli.wallpaper.ui.components
 
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 @Composable
 fun WallpaperCardShimmer(modifier: Modifier = Modifier) {
+    val shimmerColors = listOf(
+        Color.LightGray.copy(alpha = 0.3f),
+        Color.LightGray.copy(alpha = 0.5f),
+        Color.LightGray.copy(alpha = 0.3f),
+    )
+
     val transition = rememberInfiniteTransition(label = "shimmer")
-    val alpha by transition.animateFloat(
-        initialValue = 0.35f,
-        targetValue = 0.8f,
+    val translateAnim by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1000f,
         animationSpec = infiniteRepeatable(
-            animation = tween(850),
-            repeatMode = RepeatMode.Reverse,
+            animation = tween(durationMillis = 1200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
         ),
-        label = "alpha",
+        label = "shimmer"
+    )
+
+    val brush = Brush.linearGradient(
+        colors = shimmerColors,
+        start = Offset.Zero,
+        end = Offset(x = translateAnim, y = translateAnim)
     )
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .aspectRatio(0.68f)
-            .alpha(alpha)
-            .clip(RoundedCornerShape(24.dp))
-            .background(Color.White.copy(alpha = 0.08f)),
+            .aspectRatio(0.7f)
+            .clip(RoundedCornerShape(32.dp))
+            .background(brush)
+    )
+}
+
+@Composable
+fun FeaturedHeroShimmer() {
+    val shimmerColors = listOf(
+        Color.LightGray.copy(alpha = 0.3f),
+        Color.LightGray.copy(alpha = 0.5f),
+        Color.LightGray.copy(alpha = 0.3f),
+    )
+
+    val transition = rememberInfiniteTransition(label = "heroShimmer")
+    val translateAnim by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 2000f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1400, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "heroShimmer"
+    )
+
+    val brush = Brush.linearGradient(
+        colors = shimmerColors,
+        start = Offset.Zero,
+        end = Offset(x = translateAnim, y = translateAnim)
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(480.dp)
+            .clip(RoundedCornerShape(32.dp))
+            .background(brush)
     )
 }
