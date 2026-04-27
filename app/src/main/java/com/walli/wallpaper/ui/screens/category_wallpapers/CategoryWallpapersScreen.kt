@@ -54,15 +54,25 @@ fun CategoryWallpapersRoute(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(categoryName) },
+            CenterAlignedTopAppBar(
+                title = { 
+                    Text(
+                        text = categoryName,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    ) 
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Rounded.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         CategoryWallpapersScreen(
             modifier = Modifier.padding(padding),

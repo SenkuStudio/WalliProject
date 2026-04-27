@@ -3,6 +3,8 @@
 package com.walli.wallpaper.ui.screens.preview
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -37,7 +39,6 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -151,111 +152,108 @@ fun PreviewRoute(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        containerColor = Color.Black,
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-        ) {
-            HorizontalPager(
-                state = pagerState,
-                beyondViewportPageCount = 1,
-                modifier = Modifier.fillMaxSize(),
-            ) { page ->
-                if (state.items.isEmpty()) return@HorizontalPager
-                val actualPage = page % state.items.size
-                val wallpaper = state.items[actualPage]
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black),
+    ) {
+        HorizontalPager(
+            state = pagerState,
+            beyondViewportPageCount = 1,
+            modifier = Modifier.fillMaxSize(),
+        ) { page ->
+            if (state.items.isEmpty()) return@HorizontalPager
+            val actualPage = page % state.items.size
+            val wallpaper = state.items[actualPage]
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = viewModel::toggleControls,
+                    ),
+            ) {
+                AsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(wallpaper.imageUrl)
+                        .diskCachePolicy(CachePolicy.ENABLED)
+                        .memoryCachePolicy(CachePolicy.ENABLED)
+                        .build(),
+                    contentDescription = wallpaper.title,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                )
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = viewModel::toggleControls,
-                        ),
-                ) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(wallpaper.imageUrl)
-                            .diskCachePolicy(CachePolicy.ENABLED)
-                            .memoryCachePolicy(CachePolicy.ENABLED)
-                            .build(),
-                        contentDescription = wallpaper.title,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                    )
-                    Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    listOf(
-                                        Color.Black.copy(alpha = 0.55f),
-                                        Color.Transparent,
-                                        Color.Transparent,
-                                        Color.Black.copy(alpha = 0.72f),
-                                    ),
+                        .matchParentSize()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color.Black.copy(alpha = 0.6f),
+                                    Color.Transparent,
+                                    Color.Transparent,
+                                    Color.Black.copy(alpha = 0.75f),
                                 ),
                             ),
-                    )
-                }
+                        ),
+                )
             }
+        }
 
-            AnimatedVisibility(
-                visible = state.controlsVisible,
-                modifier = Modifier.align(Alignment.TopCenter),
-            ) {
-                if (state.items.isEmpty()) return@AnimatedVisibility
+        // Top Controls
+        AnimatedVisibility(
+            visible = state.controlsVisible,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.align(Alignment.TopCenter),
+        ) {
+            if (state.items.isNotEmpty()) {
                 val actualPage = pagerState.currentPage % state.items.size
-                val current = state.items[actualPage]
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .statusBarsPadding()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    FilledIconButton(onClick = onBack) {
+                    FilledIconButton(
+                        onClick = onBack,
+                        modifier = Modifier.size(48.dp),
+                        colors = androidx.compose.material3.IconButtonDefaults.filledIconButtonColors(
+                            containerColor = Color.Black.copy(alpha = 0.45f),
+                            contentColor = Color.White
+                        )
+                    ) {
                         Icon(Icons.Rounded.ArrowBack, contentDescription = "Back")
                     }
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = current.title,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Text(
-                            text = current.category,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White.copy(alpha = 0.88f),
-                        )
-                    }
+                    Spacer(modifier = Modifier.weight(1f))
                     Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = Color.Black.copy(alpha = 0.3f),
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color.Black.copy(alpha = 0.45f),
                     ) {
                         Text(
                             text = "${actualPage + 1}/${state.items.size}",
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
                             color = Color.White,
                         )
                     }
                 }
             }
+        }
 
-            AnimatedVisibility(
-                visible = state.controlsVisible,
-                modifier = Modifier.align(Alignment.BottomCenter),
-            ) {
-                if (state.items.isEmpty()) return@AnimatedVisibility
+        // Bottom Controls
+        AnimatedVisibility(
+            visible = state.controlsVisible,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.align(Alignment.BottomCenter),
+        ) {
+            if (state.items.isNotEmpty()) {
                 val actualPage = pagerState.currentPage % state.items.size
                 val current = state.items[actualPage]
                 Surface(
@@ -263,8 +261,8 @@ fun PreviewRoute(
                         .fillMaxWidth()
                         .navigationBarsPadding()
                         .padding(16.dp),
-                    shape = RoundedCornerShape(30.dp),
-                    color = Color.Black.copy(alpha = 0.38f),
+                    shape = RoundedCornerShape(32.dp),
+                    color = Color.Black.copy(alpha = 0.45f),
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         if (current.isPremium) {
@@ -366,43 +364,50 @@ fun PreviewRoute(
                         ) {
                             Text(
                                 text = "${current.downloads} downloads",
-                                color = Color.White.copy(alpha = 0.92f),
+                                color = Color.White.copy(alpha = 0.9f),
+                                style = MaterialTheme.typography.labelMedium
                             )
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     imageVector = Icons.Rounded.Lock,
                                     contentDescription = null,
-                                    tint = Color.White.copy(alpha = 0.75f),
-                                    modifier = Modifier.size(16.dp),
+                                    tint = Color.White.copy(alpha = 0.7f),
+                                    modifier = Modifier.size(14.dp),
                                 )
                                 Text(
                                     text = "Tap image to hide controls",
-                                    color = Color.White.copy(alpha = 0.75f),
-                                    modifier = Modifier.padding(start = 6.dp),
+                                    color = Color.White.copy(alpha = 0.7f),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    modifier = Modifier.padding(start = 4.dp),
                                 )
                             }
                         }
                     }
                 }
             }
+        }
 
-            if (state.isWorking) {
-                Surface(
-                    modifier = Modifier.align(Alignment.Center),
-                    shape = RoundedCornerShape(28.dp),
-                    color = Color.Black.copy(alpha = 0.72f),
+        if (state.isWorking) {
+            Surface(
+                modifier = Modifier.align(Alignment.Center),
+                shape = RoundedCornerShape(28.dp),
+                color = Color.Black.copy(alpha = 0.72f),
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 18.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 18.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        CircularProgressIndicator()
-                        Text(state.workingLabel ?: "Working…", color = Color.White)
-                    }
+                    CircularProgressIndicator()
+                    Text(state.workingLabel ?: "Working…", color = Color.White)
                 }
             }
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 100.dp)
+        )
     }
 }
 
