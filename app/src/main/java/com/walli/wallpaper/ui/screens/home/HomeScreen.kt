@@ -59,15 +59,21 @@ import androidx.compose.runtime.snapshotFlow
 @Composable
 fun HomeRoute(
     onOpenPreview: () -> Unit,
+    initialCategory: String? = null,
     viewModel: HomeViewModel = hiltViewModel(),
     adsViewModel: AdsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val activity = LocalContext.current.findActivity()
 
+    LaunchedEffect(initialCategory) {
+        if (initialCategory != null) {
+            viewModel.selectCategory(com.walli.wallpaper.domain.model.WallpaperCategory(initialCategory))
+        }
+    }
+
     HomeScreen(
         state = state,
-        onQueryChange = viewModel::updateQuery,
         onRefresh = viewModel::refresh,
         onLoadMore = viewModel::loadMore,
         onSortSelected = viewModel::changeSort,
@@ -84,7 +90,6 @@ fun HomeRoute(
 @Composable
 private fun HomeScreen(
     state: HomeUiState,
-    onQueryChange: (String) -> Unit,
     onRefresh: () -> Unit,
     onLoadMore: () -> Unit,
     onSortSelected: (WallpaperSort) -> Unit,
@@ -129,7 +134,7 @@ private fun HomeScreen(
                     verticalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
-                        HomeHeader(query = state.query, onQueryChange = onQueryChange)
+                        HomeHeader()
                     }
 
                     if (state.wallpapers.isNotEmpty()) {
@@ -240,47 +245,8 @@ private fun HomeScreen(
 }
 
 @Composable
-private fun HomeHeader(
-    query: String,
-    onQueryChange: (String) -> Unit,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                        MaterialTheme.colorScheme.background,
-                    ),
-                ),
-            )
-            .statusBarsPadding()
-                    .padding(bottom = 8.dp),
-    ) {
-        Text(
-            text = "Discover premium wallpapers",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-        )
-        Surface(
-            shape = RoundedCornerShape(28.dp),
-            tonalElevation = 4.dp,
-            color = MaterialTheme.colorScheme.surface,
-        ) {
-            OutlinedTextField(
-                value = query,
-                onValueChange = onQueryChange,
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Search mountains, AMOLED, abstract…") },
-                leadingIcon = {
-                    Icon(Icons.Rounded.Search, contentDescription = null)
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(28.dp),
-            )
-        }
-    }
+private fun HomeHeader() {
+    Spacer(modifier = Modifier.statusBarsPadding().height(8.dp))
 }
 
 @Composable

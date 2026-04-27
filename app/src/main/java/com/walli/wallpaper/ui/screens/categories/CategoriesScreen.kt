@@ -1,5 +1,6 @@
 package com.walli.wallpaper.ui.screens.categories
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,7 +24,10 @@ import com.walli.wallpaper.ui.common.LoadState
 import com.walli.wallpaper.ui.components.EmptyState
 
 @Composable
-fun CategoriesRoute(viewModel: CategoriesViewModel = hiltViewModel()) {
+fun CategoriesRoute(
+    onCategoryClick: (String) -> Unit,
+    viewModel: CategoriesViewModel = hiltViewModel(),
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     when (state.loadState) {
         is LoadState.Error -> EmptyState(
@@ -51,6 +55,7 @@ fun CategoriesRoute(viewModel: CategoriesViewModel = hiltViewModel()) {
             }
             items(state.categories) { category ->
                 Surface(
+                    onClick = { onCategoryClick(category.name) },
                     shape = RoundedCornerShape(28.dp),
                     tonalElevation = 6.dp,
                     color = MaterialTheme.colorScheme.surface,

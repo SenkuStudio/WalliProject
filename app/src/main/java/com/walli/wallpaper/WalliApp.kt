@@ -1,6 +1,8 @@
 package com.walli.wallpaper
 
 import android.app.Application
+import androidx.hilt.work.HiltWorkerFactory
+import androidx.work.Configuration
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import coil3.disk.DiskCache
@@ -11,9 +13,21 @@ import dagger.hilt.android.HiltAndroidApp
 import okio.Path.Companion.toPath
 import java.io.File
 import okhttp3.OkHttpClient
+import javax.inject.Inject
 
 @HiltAndroidApp
-class WalliApp : Application(), SingletonImageLoader.Factory {
+class WalliApp : Application(), SingletonImageLoader.Factory, Configuration.Provider {
+    @Inject
+    lateinit var workerFactory: HiltWorkerFactory
+
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
+            .setWorkerFactory(
+                if (::workerFactory.isInitialized) workerFactory
+                else throw IllegalStateException("HiltWorkerFactory not initialized")
+            )
+            .build()
+
     override fun newImageLoader(context: android.content.Context): ImageLoader {
         val imageCacheDir = File(context.cacheDir, "coil_image_cache").apply { mkdirs() }
         return ImageLoader.Builder(context)
