@@ -15,6 +15,7 @@ import com.walli.wallpaper.ui.screens.categories.CategoriesRoute
 import com.walli.wallpaper.ui.screens.favorites.FavoritesRoute
 import com.walli.wallpaper.ui.screens.home.HomeRoute
 import com.walli.wallpaper.ui.screens.preview.PreviewRoute
+import com.walli.wallpaper.ui.screens.about.AboutRoute
 
 @Composable
 fun WalliNavGraph(navController: NavHostController) {
@@ -42,6 +43,9 @@ fun WalliNavGraph(navController: NavHostController) {
             }
             composable(WalliRoute.Favorites.route) {
                 FavoritesRoute(onOpenPreview = { navController.navigate(WalliRoute.Preview.route) })
+            }
+            composable(WalliRoute.About.route) {
+                AboutRoute(onBack = { navController.popBackStack() })
             }
             composable(WalliRoute.Preview.route) {
                 PreviewRoute(onBack = { navController.popBackStack() })
