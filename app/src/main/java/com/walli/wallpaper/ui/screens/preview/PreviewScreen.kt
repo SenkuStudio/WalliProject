@@ -2,7 +2,10 @@
 
 package com.walli.wallpaper.ui.screens.preview
 
+import android.graphics.Bitmap
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -37,6 +40,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SnackbarHost
@@ -54,18 +58,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.palette.graphics.Palette
 import coil3.SingletonImageLoader
 import coil3.compose.AsyncImage
+import coil3.asDrawable
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
+import coil3.request.SuccessResult
+import coil3.request.allowHardware
 import com.walli.wallpaper.ads.AdsViewModel
 import com.walli.wallpaper.domain.model.WallpaperTarget
 import com.walli.wallpaper.ui.components.EmptyState
@@ -83,6 +93,10 @@ fun PreviewRoute(
     val context = LocalContext.current
     val activity = context.findActivity()
     var showSetSheet by remember { mutableStateOf(false) }
+
+    // Color Palette state
+    var dominantColor by remember { mutableStateOf(Color.Black) }
+    var onDominantColor by remember { mutableStateOf(Color.White) }
 
     LaunchedEffect(state.message) {
         state.message?.let { message ->
@@ -112,7 +126,31 @@ fun PreviewRoute(
         snapshotFlow { pagerState.settledPage }.collectLatest { page ->
             if (state.items.isEmpty()) return@collectLatest
             val actualPage = page % state.items.size
+            val imageUrl = state.items[actualPage].imageUrl
+            
             viewModel.onPageSettled(actualPage)
+            
+            // Extract Palette from the current image
+            val loader = SingletonImageLoader.get(context)
+            val request = ImageRequest.Builder(context)
+                .data(imageUrl)
+                .allowHardware(false) // Required to convert to bitmap
+                .build()
+            
+            val result = loader.execute(request)
+            if (result is SuccessResult) {
+                val bitmap = result.image.asDrawable(context.resources).toBitmap()
+                Palette.from(bitmap).generate { palette ->
+                    palette?.let {
+                        val swatch = it.vibrantSwatch ?: it.dominantSwatch
+                        swatch?.let { s ->
+                            dominantColor = Color(s.rgb)
+                            onDominantColor = Color(s.titleTextColor)
+                        }
+                    }
+                }
+            }
+
             preloadAdjacentImages(
                 context = context,
                 urls = listOfNotNull(
@@ -122,6 +160,12 @@ fun PreviewRoute(
             )
         }
     }
+
+    val animatedDominantColor by animateColorAsState(
+        targetValue = dominantColor,
+        animationSpec = tween(durationMillis = 600),
+        label = "dominantColor"
+    )
 
     if (showSetSheet) {
         ModalBottomSheet(onDismissRequest = { showSetSheet = false }) {
@@ -222,9 +266,9 @@ fun PreviewRoute(
                     FilledIconButton(
                         onClick = onBack,
                         modifier = Modifier.size(48.dp),
-                        colors = androidx.compose.material3.IconButtonDefaults.filledIconButtonColors(
-                            containerColor = Color.Black.copy(alpha = 0.45f),
-                            contentColor = Color.White
+                        colors = IconButtonDefaults.filledIconButtonColors(
+                            containerColor = animatedDominantColor.copy(alpha = 0.95f),
+                            contentColor = onDominantColor
                         )
                     ) {
                         Icon(Icons.Rounded.ArrowBack, contentDescription = "Back")
@@ -232,14 +276,15 @@ fun PreviewRoute(
                     Spacer(modifier = Modifier.weight(1f))
                     Surface(
                         shape = RoundedCornerShape(16.dp),
-                        color = Color.Black.copy(alpha = 0.45f),
+                        color = animatedDominantColor.copy(alpha = 0.95f),
+                        tonalElevation = 4.dp
                     ) {
                         Text(
                             text = "${actualPage + 1}/${state.items.size}",
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                             style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = onDominantColor,
                         )
                     }
                 }
@@ -262,14 +307,17 @@ fun PreviewRoute(
                         .navigationBarsPadding()
                         .padding(16.dp),
                     shape = RoundedCornerShape(32.dp),
-                    color = Color.Black.copy(alpha = 0.45f),
+                    color = animatedDominantColor.copy(alpha = 0.95f),
+                    tonalElevation = 12.dp,
+                    shadowElevation = 8.dp
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         if (current.isPremium) {
                             Text(
                                 text = "Premium wallpaper · unlock with rewarded ad",
                                 style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = onDominantColor,
                                 modifier = Modifier.padding(bottom = 12.dp),
                             )
                         }
@@ -292,7 +340,11 @@ fun PreviewRoute(
                                     }
                                 },
                                 modifier = Modifier.weight(1f),
-                                contentPadding = PaddingValues(horizontal = if (showLabels) 12.dp else 8.dp)
+                                contentPadding = PaddingValues(horizontal = if (showLabels) 12.dp else 8.dp),
+                                colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
+                                    containerColor = onDominantColor.copy(alpha = 0.15f),
+                                    contentColor = onDominantColor
+                                )
                             ) {
                                 Icon(
                                     imageVector = Icons.Rounded.Download,
@@ -305,15 +357,18 @@ fun PreviewRoute(
                                         text = "Download",
                                         style = MaterialTheme.typography.labelMedium,
                                         maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        softWrap = false
+                                        overflow = TextOverflow.Ellipsis, softWrap = false
                                     )
                                 }
                             }
                             FilledTonalButton(
                                 onClick = { showSetSheet = true },
                                 modifier = Modifier.weight(1f),
-                                contentPadding = PaddingValues(horizontal = if (showLabels) 12.dp else 8.dp)
+                                contentPadding = PaddingValues(horizontal = if (showLabels) 12.dp else 8.dp),
+                                colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
+                                    containerColor = onDominantColor.copy(alpha = 0.15f),
+                                    contentColor = onDominantColor
+                                )
                             ) {
                                 Icon(
                                     imageVector = Icons.Rounded.Wallpaper,
@@ -326,14 +381,17 @@ fun PreviewRoute(
                                         text = "Set",
                                         style = MaterialTheme.typography.labelMedium,
                                         maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        softWrap = false
+                                        overflow = TextOverflow.Ellipsis, softWrap = false
                                     )
                                 }
                             }
                             FilledIconButton(
                                 onClick = { viewModel.toggleFavorite(actualPage) },
-                                modifier = Modifier.size(44.dp)
+                                modifier = Modifier.size(44.dp),
+                                colors = IconButtonDefaults.filledIconButtonColors(
+                                    containerColor = onDominantColor.copy(alpha = 0.15f),
+                                    contentColor = onDominantColor
+                                )
                             ) {
                                 Icon(
                                     imageVector = if (current.isFavorite) {
@@ -347,7 +405,11 @@ fun PreviewRoute(
                             }
                             FilledIconButton(
                                 onClick = { viewModel.share(actualPage) },
-                                modifier = Modifier.size(44.dp)
+                                modifier = Modifier.size(44.dp),
+                                colors = IconButtonDefaults.filledIconButtonColors(
+                                    containerColor = onDominantColor.copy(alpha = 0.15f),
+                                    contentColor = onDominantColor
+                                )
                             ) {
                                 Icon(
                                     imageVector = Icons.Rounded.Share,
@@ -364,19 +426,19 @@ fun PreviewRoute(
                         ) {
                             Text(
                                 text = "${current.downloads} downloads",
-                                color = Color.White.copy(alpha = 0.9f),
+                                color = onDominantColor.copy(alpha = 0.9f),
                                 style = MaterialTheme.typography.labelMedium
                             )
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     imageVector = Icons.Rounded.Lock,
                                     contentDescription = null,
-                                    tint = Color.White.copy(alpha = 0.7f),
+                                    tint = onDominantColor.copy(alpha = 0.7f),
                                     modifier = Modifier.size(14.dp),
                                 )
                                 Text(
                                     text = "Tap image to hide controls",
-                                    color = Color.White.copy(alpha = 0.7f),
+                                    color = onDominantColor.copy(alpha = 0.7f),
                                     style = MaterialTheme.typography.labelSmall,
                                     modifier = Modifier.padding(start = 4.dp),
                                 )
@@ -391,15 +453,15 @@ fun PreviewRoute(
             Surface(
                 modifier = Modifier.align(Alignment.Center),
                 shape = RoundedCornerShape(28.dp),
-                color = Color.Black.copy(alpha = 0.72f),
+                color = animatedDominantColor.copy(alpha = 0.85f),
             ) {
                 Column(
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 18.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    CircularProgressIndicator()
-                    Text(state.workingLabel ?: "Working…", color = Color.White)
+                    CircularProgressIndicator(color = onDominantColor)
+                    Text(state.workingLabel ?: "Working…", color = onDominantColor)
                 }
             }
         }
