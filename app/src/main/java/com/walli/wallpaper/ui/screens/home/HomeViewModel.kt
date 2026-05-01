@@ -1,5 +1,6 @@
 package com.walli.wallpaper.ui.screens.home
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.walli.wallpaper.domain.model.Wallpaper
@@ -30,9 +31,12 @@ class HomeViewModel @Inject constructor(
     private val observeRecentsUseCase: ObserveRecentsUseCase,
     private val toggleFavoriteUseCase: ToggleFavoriteUseCase,
     private val previewSessionManager: PreviewSessionManager,
+    savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(HomeUiState())
+    private val initialCategoryId: Int? = savedStateHandle.get<Int>("categoryId")?.takeIf { it != -1 }
+
+    private val _uiState = MutableStateFlow(HomeUiState(selectedCategoryId = initialCategoryId))
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     private val pageSize = 20
@@ -58,8 +62,8 @@ class HomeViewModel @Inject constructor(
     }
 
     fun selectCategory(category: WallpaperCategory) {
-        if (_uiState.value.selectedCategory == category.name) return
-        _uiState.update { it.copy(selectedCategory = category.name) }
+        if (_uiState.value.selectedCategoryId == category.id) return
+        _uiState.update { it.copy(selectedCategoryId = category.id) }
         refresh()
     }
 
@@ -122,8 +126,8 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             getCategoriesUseCase()
                 .onSuccess { categories ->
-                    _uiState.update {
-                        it.copy(categories = listOf(WallpaperCategory("All")) + categories)
+                    _uiState.update { state ->
+                        state.copy(categories = listOf(WallpaperCategory(id = null, name = "All")) + categories)
                     }
                 }
         }
@@ -149,7 +153,7 @@ class HomeViewModel @Inject constructor(
         getWallpapersUseCase(
             page = nextPage,
             limit = pageSize,
-            category = state.selectedCategory,
+            categoryId = state.selectedCategoryId,
             query = state.query,
             sort = state.sort,
         )

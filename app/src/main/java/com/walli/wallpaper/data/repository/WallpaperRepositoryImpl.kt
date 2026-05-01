@@ -17,14 +17,14 @@ class WallpaperRepositoryImpl @Inject constructor(
     override suspend fun getWallpapers(
         page: Int,
         limit: Int,
-        category: String?,
+        categoryId: Int?,
         query: String?,
         sort: WallpaperSort,
     ): Result<PagedResult<Wallpaper>> = runCatching {
         val response = api.getWallpapers(
             page = page,
             limit = limit,
-            category = category?.takeIf { it.isNotBlank() && it != "All" },
+            categoryId = categoryId,
             query = query?.takeIf { it.isNotBlank() },
             sort = sort.apiValue,
         )

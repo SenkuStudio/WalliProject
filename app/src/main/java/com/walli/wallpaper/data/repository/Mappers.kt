@@ -22,7 +22,9 @@ internal fun WallpaperDto.toDomainOrNull(): Wallpaper? {
 }
 
 internal fun CategoryDto.toDomain(): WallpaperCategory = WallpaperCategory(
+    id = id,
     name = name,
+    slug = slug,
     coverUrl = coverUrl,
 )
 

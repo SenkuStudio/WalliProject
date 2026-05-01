@@ -1,5 +1,6 @@
 package com.walli.wallpaper.ui.screens.home
 
+import android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -65,20 +66,20 @@ import androidx.compose.runtime.snapshotFlow
 @Composable
 fun HomeRoute(
     onOpenPreview: () -> Unit,
-    initialCategory: String? = null,
+    initialCategoryId: Int? = null,
     viewModel: HomeViewModel = hiltViewModel(),
     adsViewModel: AdsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val activity = LocalContext.current.findActivity()
 
-    LaunchedEffect(initialCategory) {
-        if (initialCategory != null) {
-            viewModel.selectCategory(com.walli.wallpaper.domain.model.WallpaperCategory(initialCategory))
+    LaunchedEffect(initialCategoryId) {
+        if (initialCategoryId != null) {
+            viewModel.selectCategory(com.walli.wallpaper.domain.model.WallpaperCategory(id = initialCategoryId))
         }
     }
 
-    HomeScreen(
+      HomeScreen(
         state = state,
         onRefresh = viewModel::refresh,
         onLoadMore = viewModel::loadMore,
@@ -201,9 +202,9 @@ private fun HomeScreen(
                                 ) {
                                     items(state.categories) { category ->
                                         FilterChip(
-                                            selected = state.selectedCategory == category.name,
+                                            selected = state.selectedCategoryId == category.id,
                                             onClick = { onCategorySelected(category) },
-                                            label = { Text(category.name) },
+                                            label = { Text(category.name.orEmpty()) },
                                             shape = RoundedCornerShape(12.dp)
                                         )
                                     }

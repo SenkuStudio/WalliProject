@@ -36,7 +36,7 @@ class AutoWallpaperWorker @AssistedInject constructor(
             var wallpapersResult = repository.getWallpapers(
                 page = targetPage,
                 limit = 20,
-                category = null,
+                categoryId = null,
                 query = null,
                 sort = WallpaperSort.RANDOM
             )
@@ -48,7 +48,7 @@ class AutoWallpaperWorker @AssistedInject constructor(
                 wallpapersResult = repository.getWallpapers(
                     page = 1,
                     limit = 20,
-                    category = null,
+                    categoryId = null,
                     query = null,
                     sort = WallpaperSort.RANDOM
                 )

@@ -58,7 +58,7 @@ class AutoWallpaperService : Service() {
         var wallpapersResult = repository.getWallpapers(
             page = targetPage,
             limit = 20,
-            category = null,
+            categoryId = null,
             query = null,
             sort = WallpaperSort.RANDOM
         )
@@ -69,7 +69,7 @@ class AutoWallpaperService : Service() {
             wallpapersResult = repository.getWallpapers(
                 page = 1,
                 limit = 20,
-                category = null,
+                categoryId = null,
                 query = null,
                 sort = WallpaperSort.RANDOM
             )

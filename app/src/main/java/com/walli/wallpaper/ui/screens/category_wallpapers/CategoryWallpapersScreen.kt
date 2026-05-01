@@ -39,6 +39,7 @@ import kotlinx.coroutines.flow.map
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoryWallpapersRoute(
+    categoryId: Int,
     categoryName: String,
     onBack: () -> Unit,
     onOpenPreview: () -> Unit,
@@ -48,8 +49,8 @@ fun CategoryWallpapersRoute(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val activity = LocalContext.current.findActivity()
 
-    LaunchedEffect(categoryName) {
-        viewModel.selectCategory(WallpaperCategory(categoryName))
+    LaunchedEffect(categoryId) {
+        viewModel.selectCategory(WallpaperCategory(id = categoryId, name = categoryName))
     }
 
     Scaffold(

@@ -9,7 +9,7 @@ interface WallpaperRepository {
     suspend fun getWallpapers(
         page: Int,
         limit: Int,
-        category: String?,
+        categoryId: Int?,
         query: String?,
         sort: WallpaperSort,
     ): Result<PagedResult<Wallpaper>>

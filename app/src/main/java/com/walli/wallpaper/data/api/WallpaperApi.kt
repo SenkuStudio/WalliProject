@@ -14,7 +14,7 @@ interface WallpaperApi {
     suspend fun getWallpapers(
         @Query("page") page: Int,
         @Query("limit") limit: Int,
-        @Query("category") category: String? = null,
+        @Query("category_id") categoryId: Int? = null,
         @Query("query") query: String? = null,
         @Query("sort") sort: String? = null,
     ): ApiResponse<List<WallpaperDto>>

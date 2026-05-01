@@ -29,12 +29,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.walli.wallpaper.domain.model.WallpaperCategory
 import com.walli.wallpaper.ui.common.LoadState
 import com.walli.wallpaper.ui.components.EmptyState
 
 @Composable
 fun CategoriesRoute(
-    onCategoryClick: (String) -> Unit,
+    onCategoryClick: (WallpaperCategory) -> Unit,
     viewModel: CategoriesViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -65,9 +66,9 @@ fun CategoriesRoute(
             }
             items(state.categories) { category ->
                 CategoryCard(
-                    name = category.name,
+                    name = category.name ?: "",
                     coverUrl = category.coverUrl,
-                    onClick = { onCategoryClick(category.name) }
+                    onClick = { onCategoryClick(category) }
                 )
             }
         }

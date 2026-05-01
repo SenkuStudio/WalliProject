@@ -10,8 +10,8 @@ class GetWallpapersUseCase @Inject constructor(
     suspend operator fun invoke(
         page: Int,
         limit: Int,
-        category: String?,
+        categoryId: Int?,
         query: String?,
         sort: WallpaperSort,
-    ) = repository.getWallpapers(page, limit, category, query, sort)
+    ) = repository.getWallpapers(page, limit, categoryId, query, sort)
 }

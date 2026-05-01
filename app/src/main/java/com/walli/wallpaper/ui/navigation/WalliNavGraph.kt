@@ -41,27 +41,38 @@ fun WalliNavGraph(navController: NavHostController) {
             startDestination = WalliRoute.Home.route,
         ) {
             composable(
-                route = WalliRoute.Home.route,
-            ) {
+                route = WalliRoute.Home.route + "?categoryId={categoryId}",
+                arguments = listOf(
+                    navArgument("categoryId") { 
+                        type = NavType.IntType
+                        defaultValue = -1
+                    }
+                )
+            ) { backStackEntry ->
+                val categoryId = backStackEntry.arguments?.getInt("categoryId")?.takeIf { it != -1 }
                 HomeRoute(
+                    initialCategoryId = categoryId,
                     onOpenPreview = { navController.navigate(WalliRoute.Preview.route) }
                 )
             }
             composable(WalliRoute.Categories.route) {
                 CategoriesRoute(
                     onCategoryClick = { category ->
-                        navController.navigate(WalliRoute.CategoryWallpapers.route + "/$category")
+                        navController.navigate(WalliRoute.CategoryWallpapers.route + "/${category.id}/${category.name}")
                     }
                 )
             }
             composable(
-                route = WalliRoute.CategoryWallpapers.route + "/{categoryName}",
+                route = WalliRoute.CategoryWallpapers.route + "/{categoryId}/{categoryName}",
                 arguments = listOf(
+                    navArgument("categoryId") { type = NavType.IntType },
                     navArgument("categoryName") { type = NavType.StringType }
                 )
             ) { backStackEntry ->
+                val categoryId = backStackEntry.arguments?.getInt("categoryId") ?: 0
                 val categoryName = backStackEntry.arguments?.getString("categoryName") ?: ""
                 CategoryWallpapersRoute(
+                    categoryId = categoryId,
                     categoryName = categoryName,
                     onBack = { navController.popBackStack() },
                     onOpenPreview = { navController.navigate(WalliRoute.Preview.route) }
