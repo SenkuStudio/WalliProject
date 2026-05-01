@@ -50,7 +50,7 @@ fun FeaturedHeroCard(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             AsyncImage(
-                model = wallpaper.imageUrl,
+                model = wallpaper.thumbnailUrl,
                 contentDescription = wallpaper.title,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),

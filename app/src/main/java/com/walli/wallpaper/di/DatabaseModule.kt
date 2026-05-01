@@ -2,8 +2,10 @@ package com.walli.wallpaper.di
 
 import android.content.Context
 import androidx.room.Room
+import com.walli.wallpaper.data.local.dao.CategoryDao
 import com.walli.wallpaper.data.local.dao.FavoritesDao
 import com.walli.wallpaper.data.local.dao.RecentDao
+import com.walli.wallpaper.data.local.dao.WallpaperDao
 import com.walli.wallpaper.data.local.db.AppDatabase
 import dagger.Module
 import dagger.Provides
@@ -28,4 +30,10 @@ object DatabaseModule {
 
     @Provides
     fun provideRecentDao(database: AppDatabase): RecentDao = database.recentDao()
+
+    @Provides
+    fun provideCategoryDao(database: AppDatabase): CategoryDao = database.categoryDao()
+
+    @Provides
+    fun provideWallpaperDao(database: AppDatabase): WallpaperDao = database.wallpaperDao()
 }

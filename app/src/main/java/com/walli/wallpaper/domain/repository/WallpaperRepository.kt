@@ -4,6 +4,7 @@ import com.walli.wallpaper.domain.model.PagedResult
 import com.walli.wallpaper.domain.model.Wallpaper
 import com.walli.wallpaper.domain.model.WallpaperCategory
 import com.walli.wallpaper.domain.model.WallpaperSort
+import kotlinx.coroutines.flow.Flow
 
 interface WallpaperRepository {
     suspend fun getWallpapers(
@@ -13,6 +14,8 @@ interface WallpaperRepository {
         query: String?,
         sort: WallpaperSort,
     ): Result<PagedResult<Wallpaper>>
+
+    fun getLatestCachedWallpapers(limit: Int): Flow<List<Wallpaper>>
 
     suspend fun getCategories(): Result<List<WallpaperCategory>>
 

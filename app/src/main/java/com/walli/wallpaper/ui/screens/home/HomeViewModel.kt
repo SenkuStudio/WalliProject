@@ -9,6 +9,7 @@ import com.walli.wallpaper.domain.model.WallpaperSort
 import com.walli.wallpaper.domain.usecase.GetCategoriesUseCase
 import com.walli.wallpaper.domain.usecase.GetWallpapersUseCase
 import com.walli.wallpaper.domain.usecase.ObserveFavoriteIdsUseCase
+import com.walli.wallpaper.domain.usecase.ObserveLatestCachedWallpapersUseCase
 import com.walli.wallpaper.domain.usecase.ObserveRecentsUseCase
 import com.walli.wallpaper.domain.usecase.ToggleFavoriteUseCase
 import com.walli.wallpaper.preview.PreviewSessionManager
@@ -28,6 +29,7 @@ class HomeViewModel @Inject constructor(
     private val getWallpapersUseCase: GetWallpapersUseCase,
     private val getCategoriesUseCase: GetCategoriesUseCase,
     private val observeFavoriteIdsUseCase: ObserveFavoriteIdsUseCase,
+    private val observeLatestCachedWallpapersUseCase: ObserveLatestCachedWallpapersUseCase,
     private val observeRecentsUseCase: ObserveRecentsUseCase,
     private val toggleFavoriteUseCase: ToggleFavoriteUseCase,
     private val previewSessionManager: PreviewSessionManager,
@@ -48,8 +50,21 @@ class HomeViewModel @Inject constructor(
     init {
         observeFavorites()
         observeRecents()
+        observeCache()
         loadCategories()
         refresh()
+    }
+
+    private fun observeCache() {
+        viewModelScope.launch {
+            // Only show cache if it's the default "All" + "Latest" view
+            observeLatestCachedWallpapersUseCase(pageSize).collect { cached ->
+                val state = _uiState.value
+                if (state.wallpapers.isEmpty() && state.selectedCategoryId == null && state.query.isBlank() && state.sort == WallpaperSort.LATEST) {
+                    _uiState.update { it.copy(wallpapers = markFavorites(cached)) }
+                }
+            }
+        }
     }
 
     fun updateQuery(value: String) {

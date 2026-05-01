@@ -20,6 +20,9 @@ class WalliApp : Application(), SingletonImageLoader.Factory, Configuration.Prov
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
 
+    @Inject
+    lateinit var okHttpClient: OkHttpClient
+
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
             .setWorkerFactory(
@@ -32,15 +35,7 @@ class WalliApp : Application(), SingletonImageLoader.Factory, Configuration.Prov
         val imageCacheDir = File(context.cacheDir, "coil_image_cache").apply { mkdirs() }
         return ImageLoader.Builder(context)
             .components {
-                add(
-                    OkHttpNetworkFetcherFactory(
-                        callFactory = {
-                            OkHttpClient.Builder()
-                                .retryOnConnectionFailure(true)
-                                .build()
-                        }
-                    )
-                )
+                add(OkHttpNetworkFetcherFactory(callFactory = { okHttpClient }))
             }
             .memoryCache {
                 MemoryCache.Builder()
@@ -50,7 +45,7 @@ class WalliApp : Application(), SingletonImageLoader.Factory, Configuration.Prov
             .diskCache {
                 DiskCache.Builder()
                     .directory(imageCacheDir.absolutePath.toPath())
-                    .maxSizePercent(0.04)
+                    .maxSizeBytes(100L * 1024 * 1024) // Increase to 100MB for better persistence
                     .build()
             }
             .crossfade(true)
