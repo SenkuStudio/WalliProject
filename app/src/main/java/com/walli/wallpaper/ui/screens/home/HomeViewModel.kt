@@ -12,6 +12,7 @@ import com.walli.wallpaper.domain.usecase.ObserveFavoriteIdsUseCase
 import com.walli.wallpaper.domain.usecase.ObserveLatestCachedWallpapersUseCase
 import com.walli.wallpaper.domain.usecase.ObserveRecentsUseCase
 import com.walli.wallpaper.domain.usecase.ToggleFavoriteUseCase
+import com.walli.wallpaper.util.NetworkMonitor
 import com.walli.wallpaper.preview.PreviewSessionManager
 import com.walli.wallpaper.ui.common.LoadState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -33,6 +34,7 @@ class HomeViewModel @Inject constructor(
     private val observeRecentsUseCase: ObserveRecentsUseCase,
     private val toggleFavoriteUseCase: ToggleFavoriteUseCase,
     private val previewSessionManager: PreviewSessionManager,
+    private val networkMonitor: NetworkMonitor,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -48,11 +50,23 @@ class HomeViewModel @Inject constructor(
     private var searchJob: Job? = null
 
     init {
+        observeNetwork()
         observeFavorites()
         observeRecents()
         observeCache()
         loadCategories()
         refresh()
+    }
+
+    private fun observeNetwork() {
+        viewModelScope.launch {
+            networkMonitor.isOnline.collect { isOnline ->
+                _uiState.update { it.copy(isOnline = isOnline) }
+                if (isOnline && _uiState.value.wallpapers.isEmpty()) {
+                    refresh()
+                }
+            }
+        }
     }
 
     private fun observeCache() {

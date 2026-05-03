@@ -78,6 +78,7 @@ import coil3.request.SuccessResult
 import coil3.request.allowHardware
 import com.walli.wallpaper.ads.AdsViewModel
 import com.walli.wallpaper.domain.model.WallpaperTarget
+import com.walli.wallpaper.ui.components.NoInternetState
 import com.walli.wallpaper.ui.components.EmptyState
 import com.walli.wallpaper.util.findActivity
 import kotlinx.coroutines.flow.collectLatest
@@ -201,267 +202,274 @@ fun PreviewRoute(
             .fillMaxSize()
             .background(Color.Black),
     ) {
-        HorizontalPager(
-            state = pagerState,
-            beyondViewportPageCount = 1,
-            modifier = Modifier.fillMaxSize(),
-        ) { page ->
-            if (state.items.isEmpty()) return@HorizontalPager
-            val actualPage = page % state.items.size
-            val wallpaper = state.items[actualPage]
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = viewModel::toggleControls,
-                    ),
-            ) {
-                AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(wallpaper.imageUrl)
-                        .diskCachePolicy(CachePolicy.ENABLED)
-                        .memoryCachePolicy(CachePolicy.ENABLED)
-                        .build(),
-                    contentDescription = wallpaper.title,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                )
+        if (!state.isOnline) {
+            NoInternetState(
+                modifier = Modifier.background(MaterialTheme.colorScheme.background),
+                onRetry = null // Network monitor handles it
+            )
+        } else {
+            HorizontalPager(
+                state = pagerState,
+                beyondViewportPageCount = 1,
+                modifier = Modifier.fillMaxSize(),
+            ) { page ->
+                if (state.items.isEmpty()) return@HorizontalPager
+                val actualPage = page % state.items.size
+                val wallpaper = state.items[actualPage]
                 Box(
                     modifier = Modifier
-                        .matchParentSize()
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(
-                                    Color.Black.copy(alpha = 0.6f),
-                                    Color.Transparent,
-                                    Color.Transparent,
-                                    Color.Black.copy(alpha = 0.75f),
+                        .fillMaxSize()
+                        .background(Color.Black)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = viewModel::toggleControls,
+                        ),
+                ) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(wallpaper.imageUrl)
+                            .diskCachePolicy(CachePolicy.ENABLED)
+                            .memoryCachePolicy(CachePolicy.ENABLED)
+                            .build(),
+                        contentDescription = wallpaper.title,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                    )
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(
+                                        Color.Black.copy(alpha = 0.6f),
+                                        Color.Transparent,
+                                        Color.Transparent,
+                                        Color.Black.copy(alpha = 0.75f),
+                                    ),
                                 ),
                             ),
-                        ),
-                )
-            }
-        }
-
-        // Top Controls
-        AnimatedVisibility(
-            visible = state.controlsVisible,
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier.align(Alignment.TopCenter),
-        ) {
-            if (state.items.isNotEmpty()) {
-                val actualPage = pagerState.currentPage % state.items.size
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .statusBarsPadding()
-                        .padding(horizontal = 16.dp, vertical = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    FilledIconButton(
-                        onClick = onBack,
-                        modifier = Modifier.size(48.dp),
-                        colors = IconButtonDefaults.filledIconButtonColors(
-                            containerColor = animatedDominantColor.copy(alpha = 0.95f),
-                            contentColor = onDominantColor
-                        )
-                    ) {
-                        Icon(Icons.Rounded.ArrowBack, contentDescription = "Back")
-                    }
-                    Spacer(modifier = Modifier.weight(1f))
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = animatedDominantColor.copy(alpha = 0.95f),
-                        tonalElevation = 4.dp
-                    ) {
-                        Text(
-                            text = "${actualPage + 1}/${state.items.size}",
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = onDominantColor,
-                        )
-                    }
+                    )
                 }
             }
-        }
 
-        // Bottom Controls
-        AnimatedVisibility(
-            visible = state.controlsVisible,
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier.align(Alignment.BottomCenter),
-        ) {
-            if (state.items.isNotEmpty()) {
-                val actualPage = pagerState.currentPage % state.items.size
-                val current = state.items[actualPage]
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .navigationBarsPadding()
-                        .padding(16.dp),
-                    shape = RoundedCornerShape(32.dp),
-                    color = animatedDominantColor.copy(alpha = 0.95f),
-                    tonalElevation = 12.dp,
-                    shadowElevation = 8.dp
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        if (current.isPremium) {
+            // Top Controls
+            AnimatedVisibility(
+                visible = state.controlsVisible,
+                enter = fadeIn(),
+                exit = fadeOut(),
+                modifier = Modifier.align(Alignment.TopCenter),
+            ) {
+                if (state.items.isNotEmpty()) {
+                    val actualPage = pagerState.currentPage % state.items.size
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .statusBarsPadding()
+                            .padding(horizontal = 16.dp, vertical = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        FilledIconButton(
+                            onClick = onBack,
+                            modifier = Modifier.size(48.dp),
+                            colors = IconButtonDefaults.filledIconButtonColors(
+                                containerColor = animatedDominantColor.copy(alpha = 0.95f),
+                                contentColor = onDominantColor
+                            )
+                        ) {
+                            Icon(Icons.Rounded.ArrowBack, contentDescription = "Back")
+                        }
+                        Spacer(modifier = Modifier.weight(1f))
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = animatedDominantColor.copy(alpha = 0.95f),
+                            tonalElevation = 4.dp
+                        ) {
                             Text(
-                                text = "Premium wallpaper · unlock with rewarded ad",
+                                text = "${actualPage + 1}/${state.items.size}",
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = onDominantColor,
-                                modifier = Modifier.padding(bottom = 12.dp),
                             )
                         }
-                        
-                        val screenWidth = LocalConfiguration.current.screenWidthDp
-                        val showLabels = screenWidth > 360
+                    }
+                }
+            }
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            FilledTonalButton(
-                                onClick = {
-                                    val action = { viewModel.download(actualPage) }
-                                    if (current.isPremium) {
-                                        adsViewModel.showRewarded(activity, onReward = action)
-                                    } else {
-                                        adsViewModel.maybeShowDownloadInterstitial(activity, action)
-                                    }
-                                },
-                                modifier = Modifier.weight(1f),
-                                contentPadding = PaddingValues(horizontal = if (showLabels) 12.dp else 8.dp),
-                                colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
-                                    containerColor = onDominantColor.copy(alpha = 0.15f),
-                                    contentColor = onDominantColor
-                                )
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Download,
-                                    contentDescription = "Download",
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                if (showLabels) {
-                                    Spacer(Modifier.width(6.dp))
-                                    Text(
-                                        text = "Download",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis, softWrap = false
-                                    )
-                                }
-                            }
-                            FilledTonalButton(
-                                onClick = { showSetSheet = true },
-                                modifier = Modifier.weight(1f),
-                                contentPadding = PaddingValues(horizontal = if (showLabels) 12.dp else 8.dp),
-                                colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
-                                    containerColor = onDominantColor.copy(alpha = 0.15f),
-                                    contentColor = onDominantColor
-                                )
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Wallpaper,
-                                    contentDescription = "Set",
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                if (showLabels) {
-                                    Spacer(Modifier.width(6.dp))
-                                    Text(
-                                        text = "Set",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis, softWrap = false
-                                    )
-                                }
-                            }
-                            FilledIconButton(
-                                onClick = { viewModel.toggleFavorite(actualPage) },
-                                modifier = Modifier.size(44.dp),
-                                colors = IconButtonDefaults.filledIconButtonColors(
-                                    containerColor = onDominantColor.copy(alpha = 0.15f),
-                                    contentColor = onDominantColor
-                                )
-                            ) {
-                                Icon(
-                                    imageVector = if (current.isFavorite) {
-                                        Icons.Rounded.Favorite
-                                    } else {
-                                        Icons.Rounded.FavoriteBorder
-                                    },
-                                    contentDescription = "Favorite",
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            FilledIconButton(
-                                onClick = { viewModel.share(actualPage) },
-                                modifier = Modifier.size(44.dp),
-                                colors = IconButtonDefaults.filledIconButtonColors(
-                                    containerColor = onDominantColor.copy(alpha = 0.15f),
-                                    contentColor = onDominantColor
-                                )
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Share,
-                                    contentDescription = "Share",
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                        ) {
-                            Text(
-                                text = "${current.downloads} downloads",
-                                color = onDominantColor.copy(alpha = 0.9f),
-                                style = MaterialTheme.typography.labelMedium
-                            )
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Lock,
-                                    contentDescription = null,
-                                    tint = onDominantColor.copy(alpha = 0.7f),
-                                    modifier = Modifier.size(14.dp),
-                                )
+            // Bottom Controls
+            AnimatedVisibility(
+                visible = state.controlsVisible,
+                enter = fadeIn(),
+                exit = fadeOut(),
+                modifier = Modifier.align(Alignment.BottomCenter),
+            ) {
+                if (state.items.isNotEmpty()) {
+                    val actualPage = pagerState.currentPage % state.items.size
+                    val current = state.items[actualPage]
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .navigationBarsPadding()
+                            .padding(16.dp),
+                        shape = RoundedCornerShape(32.dp),
+                        color = animatedDominantColor.copy(alpha = 0.95f),
+                        tonalElevation = 12.dp,
+                        shadowElevation = 8.dp
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            if (current.isPremium) {
                                 Text(
-                                    text = "Tap image to hide controls",
-                                    color = onDominantColor.copy(alpha = 0.7f),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    modifier = Modifier.padding(start = 4.dp),
+                                    text = "Premium wallpaper · unlock with rewarded ad",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = onDominantColor,
+                                    modifier = Modifier.padding(bottom = 12.dp),
                                 )
+                            }
+                            
+                            val screenWidth = LocalConfiguration.current.screenWidthDp
+                            val showLabels = screenWidth > 360
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                FilledTonalButton(
+                                    onClick = {
+                                        val action = { viewModel.download(actualPage) }
+                                        if (current.isPremium) {
+                                            adsViewModel.showRewarded(activity, onReward = action)
+                                        } else {
+                                            adsViewModel.maybeShowDownloadInterstitial(activity, action)
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    contentPadding = PaddingValues(horizontal = if (showLabels) 12.dp else 8.dp),
+                                    colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
+                                        containerColor = onDominantColor.copy(alpha = 0.15f),
+                                        contentColor = onDominantColor
+                                    )
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Download,
+                                        contentDescription = "Download",
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    if (showLabels) {
+                                        Spacer(Modifier.width(6.dp))
+                                        Text(
+                                            text = "Download",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis, softWrap = false
+                                        )
+                                    }
+                                }
+                                FilledTonalButton(
+                                    onClick = { showSetSheet = true },
+                                    modifier = Modifier.weight(1f),
+                                    contentPadding = PaddingValues(horizontal = if (showLabels) 12.dp else 8.dp),
+                                    colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
+                                        containerColor = onDominantColor.copy(alpha = 0.15f),
+                                        contentColor = onDominantColor
+                                    )
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Wallpaper,
+                                        contentDescription = "Set",
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    if (showLabels) {
+                                        Spacer(Modifier.width(6.dp))
+                                        Text(
+                                            text = "Set",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis, softWrap = false
+                                        )
+                                    }
+                                }
+                                FilledIconButton(
+                                    onClick = { viewModel.toggleFavorite(actualPage) },
+                                    modifier = Modifier.size(44.dp),
+                                    colors = IconButtonDefaults.filledIconButtonColors(
+                                        containerColor = onDominantColor.copy(alpha = 0.15f),
+                                        contentColor = onDominantColor
+                                    )
+                                ) {
+                                    Icon(
+                                        imageVector = if (current.isFavorite) {
+                                            Icons.Rounded.Favorite
+                                        } else {
+                                            Icons.Rounded.FavoriteBorder
+                                        },
+                                        contentDescription = "Favorite",
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                FilledIconButton(
+                                    onClick = { viewModel.share(actualPage) },
+                                    modifier = Modifier.size(44.dp),
+                                    colors = IconButtonDefaults.filledIconButtonColors(
+                                        containerColor = onDominantColor.copy(alpha = 0.15f),
+                                        contentColor = onDominantColor
+                                    )
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Share,
+                                        contentDescription = "Share",
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                Text(
+                                    text = "${current.downloads} downloads",
+                                    color = onDominantColor.copy(alpha = 0.9f),
+                                    style = MaterialTheme.typography.labelMedium
+                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Lock,
+                                        contentDescription = null,
+                                        tint = onDominantColor.copy(alpha = 0.7f),
+                                        modifier = Modifier.size(14.dp),
+                                    )
+                                    Text(
+                                        text = "Tap image to hide controls",
+                                        color = onDominantColor.copy(alpha = 0.7f),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        modifier = Modifier.padding(start = 4.dp),
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
-        }
 
-        if (state.isWorking) {
-            Surface(
-                modifier = Modifier.align(Alignment.Center),
-                shape = RoundedCornerShape(28.dp),
-                color = animatedDominantColor.copy(alpha = 0.85f),
-            ) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 18.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+            if (state.isWorking) {
+                Surface(
+                    modifier = Modifier.align(Alignment.Center),
+                    shape = RoundedCornerShape(28.dp),
+                    color = animatedDominantColor.copy(alpha = 0.85f),
                 ) {
-                    CircularProgressIndicator(color = onDominantColor)
-                    Text(state.workingLabel ?: "Working…", color = onDominantColor)
+                    Column(
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 18.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        CircularProgressIndicator(color = onDominantColor)
+                        Text(state.workingLabel ?: "Working…", color = onDominantColor)
+                    }
                 }
             }
         }

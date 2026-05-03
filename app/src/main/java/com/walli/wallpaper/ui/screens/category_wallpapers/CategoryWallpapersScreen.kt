@@ -27,6 +27,7 @@ import com.walli.wallpaper.ads.AdsViewModel
 import com.walli.wallpaper.domain.model.WallpaperCategory
 import com.walli.wallpaper.ui.common.LoadState
 import com.walli.wallpaper.ui.components.EmptyState
+import com.walli.wallpaper.ui.components.NoInternetState
 import com.walli.wallpaper.ui.components.WallpaperCard
 import com.walli.wallpaper.ui.components.WallpaperCardShimmer
 import com.walli.wallpaper.ui.screens.home.HomeUiState
@@ -75,18 +76,25 @@ fun CategoryWallpapersRoute(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        CategoryWallpapersScreen(
-            modifier = Modifier.padding(padding),
-            state = state,
-            onRefresh = viewModel::refresh,
-            onLoadMore = viewModel::loadMore,
-            onWallpaperClick = { index ->
-                adsViewModel.maybeShowOpenInterstitial(activity) {
-                    viewModel.openPreview(index)
-                    onOpenPreview()
-                }
-            },
-        )
+        if (!state.isOnline) {
+            NoInternetState(
+                modifier = Modifier.padding(padding),
+                onRetry = viewModel::refresh
+            )
+        } else {
+            CategoryWallpapersScreen(
+                modifier = Modifier.padding(padding),
+                state = state,
+                onRefresh = viewModel::refresh,
+                onLoadMore = viewModel::loadMore,
+                onWallpaperClick = { index ->
+                    adsViewModel.maybeShowOpenInterstitial(activity) {
+                        viewModel.openPreview(index)
+                        onOpenPreview()
+                    }
+                },
+            )
+        }
     }
 }
 

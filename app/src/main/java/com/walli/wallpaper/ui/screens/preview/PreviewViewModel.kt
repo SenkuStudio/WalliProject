@@ -8,6 +8,7 @@ import com.walli.wallpaper.domain.usecase.IncrementDownloadUseCase
 import com.walli.wallpaper.domain.usecase.ObserveFavoriteIdsUseCase
 import com.walli.wallpaper.domain.usecase.SaveRecentWallpaperUseCase
 import com.walli.wallpaper.domain.usecase.ToggleFavoriteUseCase
+import com.walli.wallpaper.util.NetworkMonitor
 import com.walli.wallpaper.preview.PreviewSessionManager
 import com.walli.wallpaper.wallpaper.ShareManager
 import com.walli.wallpaper.wallpaper.WallpaperApplier
@@ -28,6 +29,7 @@ data class PreviewUiState(
     val isWorking: Boolean = false,
     val workingLabel: String? = null,
     val message: String? = null,
+    val isOnline: Boolean = true,
 )
 
 @HiltViewModel
@@ -40,12 +42,14 @@ class PreviewViewModel @Inject constructor(
     private val wallpaperDownloader: WallpaperDownloader,
     private val wallpaperApplier: WallpaperApplier,
     private val shareManager: ShareManager,
+    private val networkMonitor: NetworkMonitor,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PreviewUiState())
     val uiState: StateFlow<PreviewUiState> = _uiState.asStateFlow()
 
     init {
+        observeNetwork()
         viewModelScope.launch {
             combine(previewSessionManager.session, observeFavoriteIdsUseCase()) { session, favoriteIds ->
                 session to favoriteIds
@@ -56,6 +60,14 @@ class PreviewViewModel @Inject constructor(
                         initialIndex = session.initialIndex,
                     )
                 }
+            }
+        }
+    }
+
+    private fun observeNetwork() {
+        viewModelScope.launch {
+            networkMonitor.isOnline.collect { isOnline ->
+                _uiState.update { it.copy(isOnline = isOnline) }
             }
         }
     }

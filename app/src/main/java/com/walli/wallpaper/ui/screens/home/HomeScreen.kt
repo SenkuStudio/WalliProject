@@ -55,6 +55,7 @@ import com.walli.wallpaper.ui.common.LoadState
 import com.walli.wallpaper.ui.components.BannerAd
 import com.walli.wallpaper.ui.components.EmptyState
 import com.walli.wallpaper.ui.components.FeaturedHeroCard
+import com.walli.wallpaper.ui.components.NoInternetState
 import com.walli.wallpaper.ui.components.WallpaperCard
 import com.walli.wallpaper.ui.components.WallpaperCardShimmer
 import com.walli.wallpaper.util.findActivity
@@ -119,143 +120,158 @@ private fun HomeScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        when {
-            state.loadState is LoadState.Error && state.wallpapers.isEmpty() -> {
-                val message = (state.loadState as LoadState.Error).message
-                EmptyState(
-                    title = "Couldn’t load wallpapers",
-                    subtitle = message,
-                    actionText = "Retry",
-                    onAction = onRefresh,
-                )
-            }
+        if (!state.isOnline) {
+            NoInternetState(
+                modifier = Modifier.padding(padding),
+                onRetry = onRefresh
+            )
+        } else {
+            when {
+                state.loadState is LoadState.Error && state.wallpapers.isEmpty() -> {
+                    val message = (state.loadState as LoadState.Error).message
+                    EmptyState(
+                        title = "Couldn’t load wallpapers",
+                        subtitle = message,
+                        actionText = "Retry",
+                        onAction = onRefresh,
+                    )
+                }
 
-            else -> {
-                PullToRefreshBox(
-                    isRefreshing = state.loadState is LoadState.Refreshing,
-                    onRefresh = onRefresh,
-                    state = pullState,
-                    modifier = Modifier.padding(padding)
-                ) {
-                    LazyVerticalGrid(
-                        state = gridState,
-                        columns = GridCells.Fixed(2),
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 100.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                else -> {
+                    PullToRefreshBox(
+                        isRefreshing = state.loadState is LoadState.Refreshing,
+                        onRefresh = onRefresh,
+                        state = pullState,
+                        modifier = Modifier.padding(padding)
                     ) {
-                        if (state.wallpapers.isNotEmpty()) {
-                            item(span = { GridItemSpan(maxLineSpan) }) {
-                                FeaturedHeroCard(
-                                    wallpaper = state.wallpapers.first(),
-                                    onClick = { onWallpaperClick(0) },
-                                )
-                            }
-                        }
-
-                        if (state.recentWallpapers.isNotEmpty()) {
-                            item(span = { GridItemSpan(maxLineSpan) }) {
-                                Column(modifier = Modifier.padding(vertical = 8.dp)) {
-                                    Text(
-                                        text = "Continue Exploring",
-                                        style = MaterialTheme.typography.titleLarge,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(bottom = 12.dp)
+                        LazyVerticalGrid(
+                            state = gridState,
+                            columns = GridCells.Fixed(2),
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(
+                                start = 16.dp,
+                                end = 16.dp,
+                                top = 8.dp,
+                                bottom = 100.dp
+                            ),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                        ) {
+                            if (state.wallpapers.isNotEmpty()) {
+                                item(span = { GridItemSpan(maxLineSpan) }) {
+                                    FeaturedHeroCard(
+                                        wallpaper = state.wallpapers.first(),
+                                        onClick = { onWallpaperClick(0) },
                                     )
-                                    LazyRow(
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                    ) {
-                                        items(state.recentWallpapers.take(8)) { wallpaper ->
-                                            Box(modifier = Modifier.width(140.dp)) {
-                                                WallpaperCard(
-                                                    wallpaper = wallpaper,
-                                                    onClick = {
-                                                        val index = state.wallpapers.indexOfFirst { it.id == wallpaper.id }
-                                                        onWallpaperClick(index.coerceAtLeast(0))
-                                                    },
-                                                )
+                                }
+                            }
+
+                            if (state.recentWallpapers.isNotEmpty()) {
+                                item(span = { GridItemSpan(maxLineSpan) }) {
+                                    Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                                        Text(
+                                            text = "Continue Exploring",
+                                            style = MaterialTheme.typography.titleLarge,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(bottom = 12.dp)
+                                        )
+                                        LazyRow(
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        ) {
+                                            items(state.recentWallpapers.take(8)) { wallpaper ->
+                                                Box(modifier = Modifier.width(140.dp)) {
+                                                    WallpaperCard(
+                                                        wallpaper = wallpaper,
+                                                        onClick = {
+                                                            val index =
+                                                                state.wallpapers.indexOfFirst { it.id == wallpaper.id }
+                                                            onWallpaperClick(index.coerceAtLeast(0))
+                                                        },
+                                                    )
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
-                        }
 
-                        item(span = { GridItemSpan(maxLineSpan) }) {
-                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "Explore",
-                                        style = MaterialTheme.typography.headlineSmall,
-                                        fontWeight = FontWeight.ExtraBold,
-                                    )
+                            item(span = { GridItemSpan(maxLineSpan) }) {
+                                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "Explore",
+                                            style = MaterialTheme.typography.headlineSmall,
+                                            fontWeight = FontWeight.ExtraBold,
+                                        )
+                                    }
+
+                                    LazyRow(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        contentPadding = PaddingValues(bottom = 4.dp)
+                                    ) {
+                                        items(state.categories) { category ->
+                                            FilterChip(
+                                                selected = state.selectedCategoryId == category.id,
+                                                onClick = { onCategorySelected(category) },
+                                                label = { Text(category.name.orEmpty()) },
+                                                shape = RoundedCornerShape(12.dp)
+                                            )
+                                        }
+                                    }
+
+                                    LazyRow(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        contentPadding = PaddingValues(bottom = 8.dp)
+                                    ) {
+                                        items(WallpaperSort.entries) { sort ->
+                                            FilterChip(
+                                                selected = state.sort == sort,
+                                                onClick = { onSortSelected(sort) },
+                                                label = { Text(sort.label) },
+                                                shape = RoundedCornerShape(12.dp)
+                                            )
+                                        }
+                                    }
                                 }
-                                
-                                LazyRow(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    contentPadding = PaddingValues(bottom = 4.dp)
-                                ) {
-                                    items(state.categories) { category ->
-                                        FilterChip(
-                                            selected = state.selectedCategoryId == category.id,
-                                            onClick = { onCategorySelected(category) },
-                                            label = { Text(category.name.orEmpty()) },
-                                            shape = RoundedCornerShape(12.dp)
+                            }
+
+                            when {
+                                state.loadState is LoadState.Loading && state.wallpapers.isEmpty() -> {
+                                    items(8) {
+                                        WallpaperCardShimmer()
+                                    }
+                                }
+
+                                state.loadState is LoadState.Empty -> {
+                                    item(span = { GridItemSpan(maxLineSpan) }) {
+                                        EmptyState(
+                                            title = "No results",
+                                            subtitle = "Try a different keyword, sort, or category.",
+                                            modifier = Modifier.height(280.dp),
                                         )
                                     }
                                 }
 
-                                LazyRow(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    contentPadding = PaddingValues(bottom = 8.dp)
-                                ) {
-                                    items(WallpaperSort.entries) { sort ->
-                                        FilterChip(
-                                            selected = state.sort == sort,
-                                            onClick = { onSortSelected(sort) },
-                                            label = { Text(sort.label) },
-                                            shape = RoundedCornerShape(12.dp)
+                                else -> {
+                                    itemsIndexed(
+                                        state.wallpapers,
+                                        key = { _, item -> item.id }) { index, wallpaper ->
+                                        WallpaperCard(
+                                            wallpaper = wallpaper,
+                                            onClick = { onWallpaperClick(index) },
                                         )
                                     }
                                 }
                             }
-                        }
 
-                        when {
-                            state.loadState is LoadState.Loading && state.wallpapers.isEmpty() -> {
-                                items(8) {
-                                    WallpaperCardShimmer()
+                            item(span = { GridItemSpan(maxLineSpan) }) {
+                                if (state.loadState is LoadState.Appending || state.wallpapers.isNotEmpty()) {
+                                    BannerAd(modifier = Modifier.padding(top = 16.dp))
                                 }
-                            }
-
-                            state.loadState is LoadState.Empty -> {
-                                item(span = { GridItemSpan(maxLineSpan) }) {
-                                    EmptyState(
-                                        title = "No results",
-                                        subtitle = "Try a different keyword, sort, or category.",
-                                        modifier = Modifier.height(280.dp),
-                                    )
-                                }
-                            }
-
-                            else -> {
-                                itemsIndexed(state.wallpapers, key = { _, item -> item.id }) { index, wallpaper ->
-                                    WallpaperCard(
-                                        wallpaper = wallpaper,
-                                        onClick = { onWallpaperClick(index) },
-                                    )
-                                }
-                            }
-                        }
-
-                        item(span = { GridItemSpan(maxLineSpan) }) {
-                            if (state.loadState is LoadState.Appending || state.wallpapers.isNotEmpty()) {
-                                BannerAd(modifier = Modifier.padding(top = 16.dp))
                             }
                         }
                     }

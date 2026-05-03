@@ -14,4 +14,5 @@ data class HomeUiState(
     val sort: WallpaperSort = WallpaperSort.LATEST,
     val loadState: LoadState = LoadState.Loading,
     val hasNext: Boolean = true,
+    val isOnline: Boolean = true,
 )

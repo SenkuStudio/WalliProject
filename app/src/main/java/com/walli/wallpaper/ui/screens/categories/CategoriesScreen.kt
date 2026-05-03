@@ -32,6 +32,7 @@ import coil3.compose.AsyncImage
 import com.walli.wallpaper.domain.model.WallpaperCategory
 import com.walli.wallpaper.ui.common.LoadState
 import com.walli.wallpaper.ui.components.EmptyState
+import com.walli.wallpaper.ui.components.NoInternetState
 
 @Composable
 fun CategoriesRoute(
@@ -40,36 +41,40 @@ fun CategoriesRoute(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     
-    when (state.loadState) {
-        is LoadState.Error -> EmptyState(
-            title = "Categories unavailable",
-            subtitle = (state.loadState as LoadState.Error).message,
-        )
-        LoadState.Empty -> EmptyState(
-            title = "No categories",
-            subtitle = "Add categories in your Cloudflare dataset and they’ll appear here.",
-        )
-        else -> LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 100.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Text(
-                    text = "Browse categories",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.ExtraBold,
-                    modifier = Modifier.statusBarsPadding().padding(bottom = 8.dp),
-                )
-            }
-            items(state.categories) { category ->
-                CategoryCard(
-                    name = category.name ?: "",
-                    coverUrl = category.coverUrl,
-                    onClick = { onCategoryClick(category) }
-                )
+    if (!state.isOnline && state.categories.isEmpty()) {
+        NoInternetState(onRetry = { /* Managed by NetworkMonitor */ })
+    } else {
+        when (state.loadState) {
+            is LoadState.Error -> EmptyState(
+                title = "Categories unavailable",
+                subtitle = (state.loadState as LoadState.Error).message,
+            )
+            LoadState.Empty -> EmptyState(
+                title = "No categories",
+                subtitle = "Add categories in your Cloudflare dataset and they’ll appear here.",
+            )
+            else -> LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 100.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Text(
+                        text = "Browse categories",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        modifier = Modifier.statusBarsPadding().padding(bottom = 8.dp),
+                    )
+                }
+                items(state.categories) { category ->
+                    CategoryCard(
+                        name = category.name ?: "",
+                        coverUrl = category.coverUrl,
+                        onClick = { onCategoryClick(category) }
+                    )
+                }
             }
         }
     }
