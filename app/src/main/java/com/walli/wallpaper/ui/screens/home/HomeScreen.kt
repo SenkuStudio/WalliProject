@@ -2,7 +2,6 @@ package com.walli.wallpaper.ui.screens.home
 
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
-import android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -94,7 +93,6 @@ fun HomeRoute(
         onLoadMore = viewModel::loadMore,
         onSortSelected = viewModel::changeSort,
         onCategorySelected = viewModel::selectCategory,
-        onQueryChange = viewModel::updateQuery,
         onWallpaperClick = { index ->
             adsViewModel.maybeShowOpenInterstitial(activity) {
                 viewModel.openPreview(index)
@@ -114,7 +112,6 @@ private fun HomeScreen(
     onLoadMore: () -> Unit,
     onSortSelected: (WallpaperSort) -> Unit,
     onCategorySelected: (com.walli.wallpaper.domain.model.WallpaperCategory) -> Unit,
-    onQueryChange: (String) -> Unit,
     onWallpaperClick: (Int) -> Unit,
 ) {
     val gridState = rememberLazyGridState()
@@ -129,10 +126,7 @@ private fun HomeScreen(
 
     Scaffold(
         topBar = {
-            HomeTopBar(
-                query = state.query,
-                onQueryChange = onQueryChange
-            )
+            HomeTopBar()
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
@@ -305,30 +299,13 @@ private fun HomeScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HomeTopBar(
-    query: String,
-    onQueryChange: (String) -> Unit,
-) {
+private fun HomeTopBar() {
     CenterAlignedTopAppBar(
         title = {
-            OutlinedTextField(
-                value = query,
-                onValueChange = onQueryChange,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp)
-                    .height(52.dp),
-                placeholder = { Text("Search wallpapers...") },
-                leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
-                shape = RoundedCornerShape(16.dp),
-                singleLine = true,
-                colors = androidx.compose.material3.TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                    disabledContainerColor = Color.Transparent,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                )
+            Text(
+                text = "Walli",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.ExtraBold,
             )
         },
         colors = TopAppBarDefaults.topAppBarColors(

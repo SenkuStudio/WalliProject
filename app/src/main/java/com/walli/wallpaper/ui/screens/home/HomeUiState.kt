@@ -10,7 +10,6 @@ data class HomeUiState(
     val recentWallpapers: List<Wallpaper> = emptyList(),
     val categories: List<WallpaperCategory> = listOf(WallpaperCategory(id = null, name = "All")),
     val selectedCategoryId: Int? = null,
-    val query: String = "",
     val sort: WallpaperSort = WallpaperSort.LATEST,
     val loadState: LoadState = LoadState.Loading,
     val hasNext: Boolean = true,

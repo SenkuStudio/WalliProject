@@ -47,7 +47,6 @@ class HomeViewModel @Inject constructor(
     private var currentPage = 0
     private var requestInFlight = false
     private var favoriteIds = emptySet<String>()
-    private var searchJob: Job? = null
 
     init {
         observeNetwork()
@@ -74,20 +73,10 @@ class HomeViewModel @Inject constructor(
             // Only show cache if it's the default "All" + "Latest" view
             observeLatestCachedWallpapersUseCase(pageSize).collect { cached ->
                 val state = _uiState.value
-                if (state.wallpapers.isEmpty() && state.selectedCategoryId == null && state.query.isBlank() && state.sort == WallpaperSort.LATEST) {
+                if (state.wallpapers.isEmpty() && state.selectedCategoryId == null && state.sort == WallpaperSort.LATEST) {
                     _uiState.update { it.copy(wallpapers = markFavorites(cached)) }
                 }
             }
-        }
-    }
-
-    fun updateQuery(value: String) {
-        if (_uiState.value.query == value) return
-        _uiState.update { it.copy(query = value) }
-        searchJob?.cancel()
-        searchJob = viewModelScope.launch {
-            delay(350)
-            refresh()
         }
     }
 
@@ -184,7 +173,7 @@ class HomeViewModel @Inject constructor(
             page = nextPage,
             limit = pageSize,
             categoryId = state.selectedCategoryId,
-            query = state.query,
+            query = null,
             sort = state.sort,
         )
             .onSuccess { page ->

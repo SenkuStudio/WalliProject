@@ -17,8 +17,12 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -36,7 +40,7 @@ import com.walli.wallpaper.ui.common.LoadState
 import com.walli.wallpaper.ui.components.EmptyState
 import com.walli.wallpaper.ui.components.NoInternetState
 
-@OptIn(androidx.compose.animation.ExperimentalSharedTransitionApi::class)
+@OptIn(androidx.compose.animation.ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun CategoriesRoute(
     onCategoryClick: (WallpaperCategory) -> Unit,
@@ -46,40 +50,55 @@ fun CategoriesRoute(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     
-    if (!state.isOnline && state.categories.isEmpty()) {
-        NoInternetState(onRetry = { /* Managed by NetworkMonitor */ })
-    } else {
-        when (state.loadState) {
-            is LoadState.Error -> EmptyState(
-                title = "Categories unavailable",
-                subtitle = (state.loadState as LoadState.Error).message,
-            )
-            LoadState.Empty -> EmptyState(
-                title = "No categories",
-                subtitle = "Add categories in your Cloudflare dataset and they’ll appear here.",
-            )
-            else -> LazyVerticalGrid(
-                columns = GridCells.Fixed(1),
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 100.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
                     Text(
-                        text = "Browse categories",
-                        style = MaterialTheme.typography.headlineMedium,
+                        text = "Walli",
+                        style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.ExtraBold,
-                        modifier = Modifier.statusBarsPadding().padding(bottom = 8.dp),
                     )
-                }
-                items(state.categories) { category ->
-                    val fallbackCover = state.categories.firstOrNull { it.coverUrl != null }?.coverUrl
-                    CategoryCard(
-                        name = category.name ?: "",
-                        coverUrl = category.coverUrl ?: fallbackCover,
-                        onClick = { onCategoryClick(category) }
-                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { padding ->
+        if (!state.isOnline && state.categories.isEmpty()) {
+            NoInternetState(
+                modifier = Modifier.padding(padding),
+                onRetry = { /* Managed by NetworkMonitor */ }
+            )
+        } else {
+            when (state.loadState) {
+                is LoadState.Error -> EmptyState(
+                    title = "Categories unavailable",
+                    subtitle = (state.loadState as LoadState.Error).message,
+                    modifier = Modifier.padding(padding)
+                )
+                LoadState.Empty -> EmptyState(
+                    title = "No categories",
+                    subtitle = "Add categories in your Cloudflare dataset and they’ll appear here.",
+                    modifier = Modifier.padding(padding)
+                )
+                else -> LazyVerticalGrid(
+                    columns = GridCells.Fixed(1),
+                    modifier = Modifier.fillMaxSize().padding(padding),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 100.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    items(state.categories) { category ->
+                        val fallbackCover = state.categories.firstOrNull { it.coverUrl != null }?.coverUrl
+                        CategoryCard(
+                            name = category.name ?: "",
+                            coverUrl = category.coverUrl ?: fallbackCover,
+                            onClick = { onCategoryClick(category) }
+                        )
+                    }
                 }
             }
         }
