@@ -16,6 +16,10 @@ enum class AppTheme {
     LIGHT, DARK, SYSTEM
 }
 
+enum class AutoWallpaperSource {
+    RANDOM, FAVORITES, CATEGORY
+}
+
 @Singleton
 class SettingsManager @Inject constructor(
     @ApplicationContext private val context: Context
@@ -23,6 +27,8 @@ class SettingsManager @Inject constructor(
     private val themeKey = stringPreferencesKey("app_theme")
     private val dynamicColorKey = booleanPreferencesKey("dynamic_color")
     private val autoWallpaperKey = booleanPreferencesKey("auto_wallpaper")
+    private val autoWallpaperSourceKey = stringPreferencesKey("auto_wallpaper_source")
+    private val autoWallpaperCategoryIdKey = intPreferencesKey("auto_wallpaper_category_id")
 
     val theme: Flow<AppTheme> = context.dataStore.data.map { preferences ->
         val themeName = preferences[themeKey] ?: AppTheme.SYSTEM.name
@@ -41,6 +47,19 @@ class SettingsManager @Inject constructor(
         preferences[autoWallpaperKey] ?: false
     }
 
+    val autoWallpaperSource: Flow<AutoWallpaperSource> = context.dataStore.data.map { preferences ->
+        val sourceName = preferences[autoWallpaperSourceKey] ?: AutoWallpaperSource.RANDOM.name
+        try {
+            AutoWallpaperSource.valueOf(sourceName)
+        } catch (e: Exception) {
+            AutoWallpaperSource.RANDOM
+        }
+    }
+
+    val autoWallpaperCategoryId: Flow<Int?> = context.dataStore.data.map { preferences ->
+        preferences[autoWallpaperCategoryIdKey]
+    }
+
     suspend fun setTheme(theme: AppTheme) {
         context.dataStore.edit { preferences ->
             preferences[themeKey] = theme.name
@@ -56,6 +75,22 @@ class SettingsManager @Inject constructor(
     suspend fun setAutoWallpaper(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[autoWallpaperKey] = enabled
+        }
+    }
+
+    suspend fun setAutoWallpaperSource(source: AutoWallpaperSource) {
+        context.dataStore.edit { preferences ->
+            preferences[autoWallpaperSourceKey] = source.name
+        }
+    }
+
+    suspend fun setAutoWallpaperCategoryId(categoryId: Int?) {
+        context.dataStore.edit { preferences ->
+            if (categoryId == null) {
+                preferences.remove(autoWallpaperCategoryIdKey)
+            } else {
+                preferences[autoWallpaperCategoryIdKey] = categoryId
+            }
         }
     }
 }

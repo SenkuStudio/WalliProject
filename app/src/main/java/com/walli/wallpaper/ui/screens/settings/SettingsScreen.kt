@@ -28,6 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.SingletonImageLoader
 import com.walli.wallpaper.R
 import com.walli.wallpaper.data.settings.AppTheme
+import com.walli.wallpaper.data.settings.AutoWallpaperSource
 import kotlinx.coroutines.launch
 
 @Composable
@@ -41,7 +42,9 @@ fun SettingsRoute(
         onBack = onBack,
         onThemeChange = viewModel::setTheme,
         onDynamicColorChange = viewModel::setDynamicColor,
-        onAutoWallpaperChange = viewModel::setAutoWallpaper
+        onAutoWallpaperChange = viewModel::setAutoWallpaper,
+        onAutoWallpaperSourceChange = viewModel::setAutoWallpaperSource,
+        onAutoWallpaperCategoryChange = viewModel::setAutoWallpaperCategory
     )
 }
 
@@ -52,12 +55,16 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onThemeChange: (AppTheme) -> Unit,
     onDynamicColorChange: (Boolean) -> Unit,
-    onAutoWallpaperChange: (Boolean) -> Unit
+    onAutoWallpaperChange: (Boolean) -> Unit,
+    onAutoWallpaperSourceChange: (AutoWallpaperSource) -> Unit,
+    onAutoWallpaperCategoryChange: (Int?) -> Unit
 ) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
     var showThemeDialog by remember { mutableStateOf(false) }
+    var showSourceDialog by remember { mutableStateOf(false) }
+    var showCategoryDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -117,6 +124,31 @@ fun SettingsScreen(
                 checked = state.autoWallpaper,
                 onCheckedChange = onAutoWallpaperChange
             )
+
+            if (state.autoWallpaper) {
+                SettingsItem(
+                    icon = Icons.Rounded.Source,
+                    title = "Wallpaper Source",
+                    subtitle = when (state.autoWallpaperSource) {
+                        AutoWallpaperSource.RANDOM -> "Random Wallpapers"
+                        AutoWallpaperSource.FAVORITES -> "Only Favorites"
+                        AutoWallpaperSource.CATEGORY -> {
+                            val categoryName = state.categories.find { it.id == state.autoWallpaperCategoryId }?.name
+                            "Category: ${categoryName ?: "Select..."}"
+                        }
+                    },
+                    onClick = { showSourceDialog = true }
+                )
+                
+                if (state.autoWallpaperSource == AutoWallpaperSource.CATEGORY) {
+                    SettingsItem(
+                        icon = Icons.Rounded.Category,
+                        title = "Select Category",
+                        subtitle = state.categories.find { it.id == state.autoWallpaperCategoryId }?.name ?: "Tap to select",
+                        onClick = { showCategoryDialog = true }
+                    )
+                }
+            }
 
             SettingsItem(
                 icon = Icons.Rounded.DeleteSweep,
@@ -194,10 +226,14 @@ fun SettingsScreen(
                 Column {
                     AppTheme.entries.forEach { theme ->
                         Row(
-                            Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { 
-                                onThemeChange(theme)
-                                showThemeDialog = false 
-                            }.padding(vertical = 12.dp, horizontal = 8.dp),
+                            Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable {
+                                    onThemeChange(theme)
+                                    showThemeDialog = false
+                                }
+                                .padding(vertical = 12.dp, horizontal = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             RadioButton(selected = state.theme == theme, onClick = null)
@@ -212,6 +248,80 @@ fun SettingsScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showThemeDialog = false }) { Text("Cancel") }
+            },
+            shape = RoundedCornerShape(28.dp)
+        )
+    }
+
+    if (showSourceDialog) {
+        AlertDialog(
+            onDismissRequest = { showSourceDialog = false },
+            title = { Text("Select Source") },
+            text = {
+                Column {
+                    AutoWallpaperSource.entries.forEach { source ->
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable {
+                                    onAutoWallpaperSourceChange(source)
+                                    showSourceDialog = false
+                                }
+                                .padding(vertical = 12.dp, horizontal = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(selected = state.autoWallpaperSource == source, onClick = null)
+                            Spacer(Modifier.width(12.dp))
+                            Text(
+                                when (source) {
+                                    AutoWallpaperSource.RANDOM -> "Random"
+                                    AutoWallpaperSource.FAVORITES -> "Favorites"
+                                    AutoWallpaperSource.CATEGORY -> "Category"
+                                },
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showSourceDialog = false }) { Text("Cancel") }
+            },
+            shape = RoundedCornerShape(28.dp)
+        )
+    }
+
+    if (showCategoryDialog) {
+        AlertDialog(
+            onDismissRequest = { showCategoryDialog = false },
+            title = { Text("Select Category") },
+            text = {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    state.categories.forEach { category ->
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable {
+                                    onAutoWallpaperCategoryChange(category.id)
+                                    showCategoryDialog = false
+                                }
+                                .padding(vertical = 12.dp, horizontal = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(selected = state.autoWallpaperCategoryId == category.id, onClick = null)
+                            Spacer(Modifier.width(12.dp))
+                            Text(
+                                category.name ?: "Unknown",
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showCategoryDialog = false }) { Text("Cancel") }
             },
             shape = RoundedCornerShape(28.dp)
         )

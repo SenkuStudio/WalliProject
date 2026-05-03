@@ -7,15 +7,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.*
 import com.walli.wallpaper.data.settings.AppTheme
+import com.walli.wallpaper.data.settings.AutoWallpaperSource
 import com.walli.wallpaper.data.settings.SettingsManager
-import com.walli.wallpaper.worker.AutoWallpaperService
+import com.walli.wallpaper.domain.model.WallpaperCategory
+import com.walli.wallpaper.domain.repository.WallpaperRepository
 import com.walli.wallpaper.worker.AutoWallpaperWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -24,22 +23,44 @@ data class SettingsUiState(
     val theme: AppTheme = AppTheme.SYSTEM,
     val dynamicColor: Boolean = false,
     val autoWallpaper: Boolean = false,
+    val autoWallpaperSource: AutoWallpaperSource = AutoWallpaperSource.RANDOM,
+    val autoWallpaperCategoryId: Int? = null,
+    val categories: List<WallpaperCategory> = emptyList()
 )
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val settingsManager: SettingsManager,
+    private val repository: WallpaperRepository,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val workManager = WorkManager.getInstance(context)
 
+    private val _categories = MutableStateFlow<List<WallpaperCategory>>(emptyList())
+
+    init {
+        viewModelScope.launch {
+            _categories.value = repository.getCategories().getOrDefault(emptyList())
+        }
+    }
+
     val uiState: StateFlow<SettingsUiState> = combine(
         settingsManager.theme,
         settingsManager.dynamicColor,
-        settingsManager.autoWallpaper
-    ) { theme, dynamicColor, autoWallpaper ->
-        SettingsUiState(theme, dynamicColor, autoWallpaper)
+        settingsManager.autoWallpaper,
+        settingsManager.autoWallpaperSource,
+        settingsManager.autoWallpaperCategoryId,
+        _categories
+    ) { args ->
+        SettingsUiState(
+            theme = args[0] as AppTheme,
+            dynamicColor = args[1] as Boolean,
+            autoWallpaper = args[2] as Boolean,
+            autoWallpaperSource = args[3] as AutoWallpaperSource,
+            autoWallpaperCategoryId = args[4] as Int?,
+            categories = args[5] as List<WallpaperCategory>
+        )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -57,18 +78,57 @@ class SettingsViewModel @Inject constructor(
 
     fun setAutoWallpaper(enabled: Boolean) {
         if (uiState.value.autoWallpaper == enabled) return
-        viewModelScope.launch { 
-            settingsManager.setAutoWallpaper(enabled) 
-            val intent = Intent(context, AutoWallpaperService::class.java)
+        viewModelScope.launch {
+            settingsManager.setAutoWallpaper(enabled)
             if (enabled) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    context.startForegroundService(intent)
-                } else {
-                    context.startService(intent)
-                }
+                scheduleAutoWallpaper(
+                    source = uiState.value.autoWallpaperSource,
+                    categoryId = uiState.value.autoWallpaperCategoryId
+                )
             } else {
-                context.stopService(intent)
+                workManager.cancelUniqueWork("AutoWallpaperWork")
             }
         }
+    }
+
+    fun setAutoWallpaperSource(source: AutoWallpaperSource) {
+        viewModelScope.launch {
+            settingsManager.setAutoWallpaperSource(source)
+            if (uiState.value.autoWallpaper) {
+                scheduleAutoWallpaper(
+                    source = source,
+                    categoryId = uiState.value.autoWallpaperCategoryId
+                )
+            }
+        }
+    }
+
+    fun setAutoWallpaperCategory(categoryId: Int?) {
+        viewModelScope.launch {
+            settingsManager.setAutoWallpaperCategoryId(categoryId)
+            if (uiState.value.autoWallpaper) {
+                scheduleAutoWallpaper(
+                    source = uiState.value.autoWallpaperSource,
+                    categoryId = categoryId
+                )
+            }
+        }
+    }
+
+    private fun scheduleAutoWallpaper(source: AutoWallpaperSource, categoryId: Int?) {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val workRequest = PeriodicWorkRequestBuilder<AutoWallpaperWorker>(
+            4, TimeUnit.HOURS
+        ).setConstraints(constraints)
+            .build()
+
+        workManager.enqueueUniquePeriodicWork(
+            "AutoWallpaperWork",
+            ExistingPeriodicWorkPolicy.REPLACE,
+            workRequest
+        )
     }
 }

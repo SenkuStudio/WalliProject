@@ -57,10 +57,5 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <service
-            android:name=".worker.AutoWallpaperService"
-            android:enabled="true"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
     </application>
 </manifest>
