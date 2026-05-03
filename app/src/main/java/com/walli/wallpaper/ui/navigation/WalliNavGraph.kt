@@ -43,7 +43,7 @@ fun WalliNavGraph(navController: NavHostController) {
             composable(
                 route = WalliRoute.Home.route + "?categoryId={categoryId}",
                 arguments = listOf(
-                    navArgument("categoryId") { 
+                    navArgument("categoryId") {
                         type = NavType.IntType
                         defaultValue = -1
                     }
