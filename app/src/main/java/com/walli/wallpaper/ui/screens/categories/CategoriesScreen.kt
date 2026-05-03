@@ -54,7 +54,7 @@ fun CategoriesRoute(
                 subtitle = "Add categories in your Cloudflare dataset and they’ll appear here.",
             )
             else -> LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
+                columns = GridCells.Fixed(1),
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 100.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -91,7 +91,7 @@ private fun CategoryCard(
         shape = RoundedCornerShape(24.dp),
         modifier = Modifier
             .fillMaxSize()
-            .aspectRatio(1f),
+            .aspectRatio(21f / 9f),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
