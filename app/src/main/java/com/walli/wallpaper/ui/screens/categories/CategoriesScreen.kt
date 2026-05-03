@@ -1,5 +1,7 @@
 package com.walli.wallpaper.ui.screens.categories
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,9 +36,12 @@ import com.walli.wallpaper.ui.common.LoadState
 import com.walli.wallpaper.ui.components.EmptyState
 import com.walli.wallpaper.ui.components.NoInternetState
 
+@OptIn(androidx.compose.animation.ExperimentalSharedTransitionApi::class)
 @Composable
 fun CategoriesRoute(
     onCategoryClick: (WallpaperCategory) -> Unit,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     viewModel: CategoriesViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -69,9 +74,10 @@ fun CategoriesRoute(
                     )
                 }
                 items(state.categories) { category ->
+                    val fallbackCover = state.categories.firstOrNull { it.coverUrl != null }?.coverUrl
                     CategoryCard(
                         name = category.name ?: "",
-                        coverUrl = category.coverUrl,
+                        coverUrl = category.coverUrl ?: fallbackCover,
                         onClick = { onCategoryClick(category) }
                     )
                 }

@@ -4,6 +4,8 @@ package com.walli.wallpaper.ui.screens.preview
 
 import android.graphics.Bitmap
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -83,9 +85,12 @@ import com.walli.wallpaper.ui.components.EmptyState
 import com.walli.wallpaper.util.findActivity
 import kotlinx.coroutines.flow.collectLatest
 
+@OptIn(androidx.compose.animation.ExperimentalSharedTransitionApi::class)
 @Composable
 fun PreviewRoute(
     onBack: () -> Unit,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     viewModel: PreviewViewModel = hiltViewModel(),
     adsViewModel: AdsViewModel = hiltViewModel(),
 ) {
@@ -226,6 +231,18 @@ fun PreviewRoute(
                             onClick = viewModel::toggleControls,
                         ),
                 ) {
+                    val imageModifier = Modifier.fillMaxSize()
+                    val sharedImageModifier = if (page % state.items.size == state.initialIndex) {
+                        with(sharedTransitionScope) {
+                            imageModifier.sharedElement(
+                                rememberSharedContentState(key = "image-${wallpaper.id}"),
+                                animatedVisibilityScope = animatedVisibilityScope
+                            )
+                        }
+                    } else {
+                        imageModifier
+                    }
+
                     AsyncImage(
                         model = ImageRequest.Builder(context)
                             .data(wallpaper.imageUrl)
@@ -233,7 +250,7 @@ fun PreviewRoute(
                             .memoryCachePolicy(CachePolicy.ENABLED)
                             .build(),
                         contentDescription = wallpaper.title,
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = sharedImageModifier,
                         contentScale = ContentScale.Crop,
                     )
                     Box(

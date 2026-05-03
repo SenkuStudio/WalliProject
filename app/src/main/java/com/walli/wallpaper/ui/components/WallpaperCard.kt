@@ -1,5 +1,7 @@
 package com.walli.wallpaper.ui.components
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,10 +37,13 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.walli.wallpaper.domain.model.Wallpaper
 
+@OptIn(androidx.compose.animation.ExperimentalSharedTransitionApi::class)
 @Composable
 fun WallpaperCard(
     wallpaper: Wallpaper,
     modifier: Modifier = Modifier,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null,
     onClick: () -> Unit,
 ) {
     Card(
@@ -57,10 +62,22 @@ fun WallpaperCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
+            val imageModifier = Modifier.fillMaxSize()
+            val sharedImageModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+                with(sharedTransitionScope) {
+                    imageModifier.sharedElement(
+                        rememberSharedContentState(key = "image-${wallpaper.id}"),
+                        animatedVisibilityScope = animatedVisibilityScope
+                    )
+                }
+            } else {
+                imageModifier
+            }
+
             AsyncImage(
                 model = wallpaper.thumbnailUrl,
                 contentDescription = wallpaper.title,
-                modifier = Modifier.fillMaxSize(),
+                modifier = sharedImageModifier,
                 contentScale = ContentScale.Crop,
             )
 

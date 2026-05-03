@@ -1,5 +1,7 @@
 package com.walli.wallpaper.ui.screens.category_wallpapers
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -37,13 +39,15 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(androidx.compose.animation.ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun CategoryWallpapersRoute(
     categoryId: Int,
     categoryName: String,
     onBack: () -> Unit,
     onOpenPreview: () -> Unit,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     viewModel: HomeViewModel = hiltViewModel(),
     adsViewModel: AdsViewModel = hiltViewModel(),
 ) {
@@ -85,6 +89,8 @@ fun CategoryWallpapersRoute(
             CategoryWallpapersScreen(
                 modifier = Modifier.padding(padding),
                 state = state,
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope,
                 onRefresh = viewModel::refresh,
                 onLoadMore = viewModel::loadMore,
                 onWallpaperClick = { index ->
@@ -98,9 +104,12 @@ fun CategoryWallpapersRoute(
     }
 }
 
+@OptIn(androidx.compose.animation.ExperimentalSharedTransitionApi::class)
 @Composable
 private fun CategoryWallpapersScreen(
     state: HomeUiState,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     onRefresh: () -> Unit,
     onLoadMore: () -> Unit,
     onWallpaperClick: (Int) -> Unit,
@@ -147,6 +156,8 @@ private fun CategoryWallpapersScreen(
                     WallpaperCard(
                         wallpaper = wallpaper,
                         onClick = { onWallpaperClick(index) },
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope
                     )
                 }
 

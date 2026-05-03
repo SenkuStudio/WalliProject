@@ -82,6 +82,7 @@ class HomeViewModel @Inject constructor(
     }
 
     fun updateQuery(value: String) {
+        if (_uiState.value.query == value) return
         _uiState.update { it.copy(query = value) }
         searchJob?.cancel()
         searchJob = viewModelScope.launch {

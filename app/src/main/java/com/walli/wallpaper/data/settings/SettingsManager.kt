@@ -29,6 +29,7 @@ class SettingsManager @Inject constructor(
     private val autoWallpaperKey = booleanPreferencesKey("auto_wallpaper")
     private val autoWallpaperSourceKey = stringPreferencesKey("auto_wallpaper_source")
     private val autoWallpaperCategoryIdKey = intPreferencesKey("auto_wallpaper_category_id")
+    private val onboardingCompletedKey = booleanPreferencesKey("onboarding_completed")
 
     val theme: Flow<AppTheme> = context.dataStore.data.map { preferences ->
         val themeName = preferences[themeKey] ?: AppTheme.SYSTEM.name
@@ -58,6 +59,10 @@ class SettingsManager @Inject constructor(
 
     val autoWallpaperCategoryId: Flow<Int?> = context.dataStore.data.map { preferences ->
         preferences[autoWallpaperCategoryIdKey]
+    }
+
+    val onboardingCompleted: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[onboardingCompletedKey] ?: false
     }
 
     suspend fun setTheme(theme: AppTheme) {
@@ -91,6 +96,12 @@ class SettingsManager @Inject constructor(
             } else {
                 preferences[autoWallpaperCategoryIdKey] = categoryId
             }
+        }
+    }
+
+    suspend fun setOnboardingCompleted(completed: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[onboardingCompletedKey] = completed
         }
     }
 }

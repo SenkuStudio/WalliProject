@@ -1,5 +1,7 @@
 package com.walli.wallpaper.ui.screens.favorites
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -22,10 +24,12 @@ import com.walli.wallpaper.ui.components.EmptyState
 import com.walli.wallpaper.ui.components.WallpaperCard
 import com.walli.wallpaper.ui.components.WallpaperCardShimmer
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(androidx.compose.animation.ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun FavoritesRoute(
     onOpenPreview: () -> Unit,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     viewModel: FavoritesViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -89,6 +93,8 @@ fun FavoritesRoute(
                                     viewModel.openPreview(index)
                                     onOpenPreview()
                                 },
+                                sharedTransitionScope = sharedTransitionScope,
+                                animatedVisibilityScope = animatedVisibilityScope
                             )
                         }
                     }

@@ -1,5 +1,7 @@
 package com.walli.wallpaper.ui.screens.home
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.SharedTransitionScope
 import android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -44,6 +46,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -64,9 +67,12 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import androidx.compose.runtime.snapshotFlow
 
+@OptIn(androidx.compose.animation.ExperimentalSharedTransitionApi::class)
 @Composable
 fun HomeRoute(
     onOpenPreview: () -> Unit,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     initialCategoryId: Int? = null,
     viewModel: HomeViewModel = hiltViewModel(),
     adsViewModel: AdsViewModel = hiltViewModel(),
@@ -82,10 +88,13 @@ fun HomeRoute(
 
       HomeScreen(
         state = state,
+        sharedTransitionScope = sharedTransitionScope,
+        animatedVisibilityScope = animatedVisibilityScope,
         onRefresh = viewModel::refresh,
         onLoadMore = viewModel::loadMore,
         onSortSelected = viewModel::changeSort,
         onCategorySelected = viewModel::selectCategory,
+        onQueryChange = viewModel::updateQuery,
         onWallpaperClick = { index ->
             adsViewModel.maybeShowOpenInterstitial(activity) {
                 viewModel.openPreview(index)
@@ -95,13 +104,17 @@ fun HomeRoute(
     )
 }
 
+@OptIn(androidx.compose.animation.ExperimentalSharedTransitionApi::class)
 @Composable
 private fun HomeScreen(
     state: HomeUiState,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     onRefresh: () -> Unit,
     onLoadMore: () -> Unit,
     onSortSelected: (WallpaperSort) -> Unit,
     onCategorySelected: (com.walli.wallpaper.domain.model.WallpaperCategory) -> Unit,
+    onQueryChange: (String) -> Unit,
     onWallpaperClick: (Int) -> Unit,
 ) {
     val gridState = rememberLazyGridState()
@@ -116,7 +129,10 @@ private fun HomeScreen(
 
     Scaffold(
         topBar = {
-            HomeTopBar()
+            HomeTopBar(
+                query = state.query,
+                onQueryChange = onQueryChange
+            )
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
@@ -162,6 +178,8 @@ private fun HomeScreen(
                                     FeaturedHeroCard(
                                         wallpaper = state.wallpapers.first(),
                                         onClick = { onWallpaperClick(0) },
+                                        sharedTransitionScope = sharedTransitionScope,
+                                        animatedVisibilityScope = animatedVisibilityScope
                                     )
                                 }
                             }
@@ -187,6 +205,8 @@ private fun HomeScreen(
                                                                 state.wallpapers.indexOfFirst { it.id == wallpaper.id }
                                                             onWallpaperClick(index.coerceAtLeast(0))
                                                         },
+                                                        sharedTransitionScope = sharedTransitionScope,
+                                                        animatedVisibilityScope = animatedVisibilityScope
                                                     )
                                                 }
                                             }
@@ -263,6 +283,8 @@ private fun HomeScreen(
                                         WallpaperCard(
                                             wallpaper = wallpaper,
                                             onClick = { onWallpaperClick(index) },
+                                            sharedTransitionScope = sharedTransitionScope,
+                                            animatedVisibilityScope = animatedVisibilityScope
                                         )
                                     }
                                 }
@@ -283,22 +305,31 @@ private fun HomeScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HomeTopBar() {
+private fun HomeTopBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+) {
     CenterAlignedTopAppBar(
         title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "Walli",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.primary
+            OutlinedTextField(
+                value = query,
+                onValueChange = onQueryChange,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp)
+                    .height(52.dp),
+                placeholder = { Text("Search wallpapers...") },
+                leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
+                shape = RoundedCornerShape(16.dp),
+                singleLine = true,
+                colors = androidx.compose.material3.TextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    disabledContainerColor = Color.Transparent,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
                 )
-                Text(
-                    text = "App",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Light
-                )
-            }
+            )
         },
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.background
