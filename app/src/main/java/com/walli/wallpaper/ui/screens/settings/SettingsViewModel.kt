@@ -16,6 +16,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import coil3.SingletonImageLoader
+import android.text.format.Formatter
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -25,7 +27,8 @@ data class SettingsUiState(
     val autoWallpaper: Boolean = false,
     val autoWallpaperSource: AutoWallpaperSource = AutoWallpaperSource.RANDOM,
     val autoWallpaperCategoryId: Int? = null,
-    val categories: List<WallpaperCategory> = emptyList()
+    val categories: List<WallpaperCategory> = emptyList(),
+    val cacheSize: String = "0 MB"
 )
 
 @HiltViewModel
@@ -38,11 +41,13 @@ class SettingsViewModel @Inject constructor(
     private val workManager = WorkManager.getInstance(context)
 
     private val _categories = MutableStateFlow<List<WallpaperCategory>>(emptyList())
+    private val _cacheSize = MutableStateFlow("0 MB")
 
     init {
         viewModelScope.launch {
             _categories.value = repository.getCategories().getOrDefault(emptyList())
         }
+        updateCacheSize()
     }
 
     val uiState: StateFlow<SettingsUiState> = combine(
@@ -51,7 +56,8 @@ class SettingsViewModel @Inject constructor(
         settingsManager.autoWallpaper,
         settingsManager.autoWallpaperSource,
         settingsManager.autoWallpaperCategoryId,
-        _categories
+        _categories,
+        _cacheSize
     ) { args ->
         SettingsUiState(
             theme = args[0] as AppTheme,
@@ -59,7 +65,8 @@ class SettingsViewModel @Inject constructor(
             autoWallpaper = args[2] as Boolean,
             autoWallpaperSource = args[3] as AutoWallpaperSource,
             autoWallpaperCategoryId = args[4] as Int?,
-            categories = args[5] as List<WallpaperCategory>
+            categories = args[5] as List<WallpaperCategory>,
+            cacheSize = args[6] as String
         )
     }.stateIn(
         scope = viewModelScope,
@@ -113,6 +120,20 @@ class SettingsViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    fun clearCache() {
+        viewModelScope.launch {
+            val imageLoader = SingletonImageLoader.get(context)
+            imageLoader.diskCache?.clear()
+            imageLoader.memoryCache?.clear()
+            updateCacheSize()
+        }
+    }
+
+    private fun updateCacheSize() {
+        val size = SingletonImageLoader.get(context).diskCache?.size ?: 0L
+        _cacheSize.value = Formatter.formatShortFileSize(context, size)
     }
 
     private fun scheduleAutoWallpaper(source: AutoWallpaperSource, categoryId: Int?) {

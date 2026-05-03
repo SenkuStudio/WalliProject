@@ -44,7 +44,8 @@ fun SettingsRoute(
         onDynamicColorChange = viewModel::setDynamicColor,
         onAutoWallpaperChange = viewModel::setAutoWallpaper,
         onAutoWallpaperSourceChange = viewModel::setAutoWallpaperSource,
-        onAutoWallpaperCategoryChange = viewModel::setAutoWallpaperCategory
+        onAutoWallpaperCategoryChange = viewModel::setAutoWallpaperCategory,
+        onClearCache = viewModel::clearCache
     )
 }
 
@@ -57,11 +58,10 @@ fun SettingsScreen(
     onDynamicColorChange: (Boolean) -> Unit,
     onAutoWallpaperChange: (Boolean) -> Unit,
     onAutoWallpaperSourceChange: (AutoWallpaperSource) -> Unit,
-    onAutoWallpaperCategoryChange: (Int?) -> Unit
+    onAutoWallpaperCategoryChange: (Int?) -> Unit,
+    onClearCache: () -> Unit
 ) {
-    val context = LocalContext.current
     val scrollState = rememberScrollState()
-    val scope = rememberCoroutineScope()
     var showThemeDialog by remember { mutableStateOf(false) }
     var showSourceDialog by remember { mutableStateOf(false) }
     var showCategoryDialog by remember { mutableStateOf(false) }
@@ -153,13 +153,8 @@ fun SettingsScreen(
             SettingsItem(
                 icon = Icons.Rounded.DeleteSweep,
                 title = "Clear Cache",
-                subtitle = "Free up storage by clearing cached images",
-                onClick = {
-                    scope.launch {
-                        SingletonImageLoader.get(context).diskCache?.clear()
-                        SingletonImageLoader.get(context).memoryCache?.clear()
-                    }
-                }
+                subtitle = "Used: ${state.cacheSize} • Tap to free up storage",
+                onClick = onClearCache
             )
 
             SettingsSectionTitle("Support & About")
