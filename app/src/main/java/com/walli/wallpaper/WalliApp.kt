@@ -9,6 +9,7 @@ import coil3.disk.DiskCache
 import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.crossfade
+import com.walli.wallpaper.ads.UnityAdsManager
 import dagger.hilt.android.HiltAndroidApp
 import okio.Path.Companion.toPath
 import java.io.File
@@ -22,6 +23,14 @@ class WalliApp : Application(), SingletonImageLoader.Factory, Configuration.Prov
 
     @Inject
     lateinit var okHttpClient: OkHttpClient
+
+    @Inject
+    lateinit var unityAdsManager: UnityAdsManager
+
+    override fun onCreate() {
+        super.onCreate()
+        unityAdsManager.initialize()
+    }
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()

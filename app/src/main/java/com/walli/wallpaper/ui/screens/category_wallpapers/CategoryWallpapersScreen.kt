@@ -61,12 +61,12 @@ fun CategoryWallpapersRoute(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { 
+                title = {
                     Text(
-                        text = categoryName,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    ) 
+                        text = "Walli",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.ExtraBold,
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {

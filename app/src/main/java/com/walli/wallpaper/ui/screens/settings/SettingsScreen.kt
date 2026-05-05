@@ -71,9 +71,9 @@ fun SettingsScreen(
             CenterAlignedTopAppBar(
                 title = { 
                     Text(
-                        "Settings",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+                        "Walli",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.ExtraBold
                     ) 
                 },
                 navigationIcon = {

@@ -116,6 +116,7 @@ dependencies {
     implementation(libs.coil.network.okhttp)
 
     implementation(libs.ads)
+    implementation(libs.unity.ads)
     implementation(libs.coroutines.android)
     implementation(libs.palette.ktx)
 

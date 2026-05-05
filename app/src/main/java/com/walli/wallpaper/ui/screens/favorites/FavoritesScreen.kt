@@ -39,9 +39,9 @@ fun FavoritesRoute(
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        "Your Favorites",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+                        "Walli",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.ExtraBold
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
