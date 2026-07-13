@@ -284,7 +284,9 @@ private fun HomeScreen(
                                 else -> {
                                     itemsIndexed(
                                         state.wallpapers,
-                                        key = { _, item -> item.id }) { index, wallpaper ->
+                                        key = { _, item -> item.id },
+                                        contentType = { _, _ -> "wallpaper" }
+                                    ) { index, wallpaper ->
                                         WallpaperCard(
                                             wallpaper = wallpaper,
                                             onClick = { onWallpaperClick(index) },

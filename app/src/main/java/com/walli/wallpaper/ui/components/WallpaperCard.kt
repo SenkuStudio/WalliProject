@@ -35,6 +35,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import androidx.compose.ui.platform.LocalContext
+import coil3.request.ImageRequest
+import coil3.request.crossfade
+import coil3.size.Precision
+import coil3.size.Size
 import com.walli.wallpaper.domain.model.Wallpaper
 
 @OptIn(androidx.compose.animation.ExperimentalSharedTransitionApi::class)
@@ -75,7 +80,12 @@ fun WallpaperCard(
             }
 
             AsyncImage(
-                model = wallpaper.thumbnailUrl,
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(wallpaper.thumbnailUrl)
+                    .crossfade(true)
+                    .size(Size(400, 600)) // Specific size for thumbnails
+                    .precision(Precision.EXACT)
+                    .build(),
                 contentDescription = wallpaper.title,
                 modifier = sharedImageModifier,
                 contentScale = ContentScale.Crop,

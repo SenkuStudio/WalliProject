@@ -49,7 +49,7 @@ class WalliApp : Application(), SingletonImageLoader.Factory, Configuration.Prov
             .diskCache {
                 DiskCache.Builder()
                     .directory(imageCacheDir.absolutePath.toPath())
-                    .maxSizeBytes(100L * 1024 * 1024) // Increase to 100MB for better persistence
+                    .maxSizeBytes(250L * 1024 * 1024) // Increase to 250MB for better persistence
                     .build()
             }
             .crossfade(true)

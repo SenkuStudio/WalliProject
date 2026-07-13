@@ -127,14 +127,13 @@ fun PreviewRoute(
     val pagerState = rememberPagerState(
         initialPage = state.initialIndex.coerceIn(0, state.items.lastIndex),
         pageCount = { 
-            if (state.items.isEmpty()) 0 else Int.MAX_VALUE 
+            state.items.size 
         },
     )
 
     LaunchedEffect(pagerState, state.items) {
-        snapshotFlow { pagerState.settledPage }.collectLatest { page ->
+        snapshotFlow { pagerState.settledPage }.collectLatest { actualPage ->
             if (state.items.isEmpty()) return@collectLatest
-            val actualPage = page % state.items.size
             val imageUrl = state.items[actualPage].imageUrl
             
             viewModel.onPageSettled(actualPage)
@@ -149,22 +148,19 @@ fun PreviewRoute(
             val result = loader.execute(request)
             if (result is SuccessResult) {
                 val bitmap = result.image.asDrawable(context.resources).toBitmap()
-                Palette.from(bitmap).generate { palette ->
-                    palette?.let {
-                        val swatch = it.vibrantSwatch ?: it.dominantSwatch
-                        swatch?.let { s ->
-                            dominantColor = Color(s.rgb)
-                            onDominantColor = Color(s.titleTextColor)
-                        }
-                    }
+                val palette = Palette.from(bitmap).maximumColorCount(16).generate()
+                val swatch = palette.vibrantSwatch ?: palette.dominantSwatch
+                swatch?.let { s ->
+                    dominantColor = Color(s.rgb)
+                    onDominantColor = Color(s.titleTextColor)
                 }
             }
 
             preloadAdjacentImages(
                 context = context,
                 urls = listOfNotNull(
-                    state.items.getOrNull((actualPage - 1 + state.items.size) % state.items.size)?.imageUrl,
-                    state.items.getOrNull((actualPage + 1) % state.items.size)?.imageUrl,
+                    state.items.getOrNull(actualPage - 1)?.imageUrl,
+                    state.items.getOrNull(actualPage + 1)?.imageUrl,
                 ),
             )
         }
@@ -220,6 +216,7 @@ fun PreviewRoute(
                 state = pagerState,
                 beyondViewportPageCount = 1,
                 modifier = Modifier.fillMaxSize(),
+                key = { page -> state.items.getOrNull(page % state.items.size)?.id ?: page }
             ) { page ->
                 if (state.items.isEmpty()) return@HorizontalPager
                 val actualPage = page % state.items.size
@@ -235,7 +232,7 @@ fun PreviewRoute(
                         ),
                 ) {
                     val imageModifier = Modifier.fillMaxSize()
-                    val sharedImageModifier = if (page % state.items.size == state.initialIndex) {
+                    val sharedImageModifier = if (page == state.initialIndex) {
                         with(sharedTransitionScope) {
                             imageModifier.sharedElement(
                                 rememberSharedContentState(key = "image-${wallpaper.id}"),

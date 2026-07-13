@@ -43,7 +43,7 @@ class HomeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(HomeUiState(selectedCategoryId = initialCategoryId))
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    private val pageSize = 20
+    private val pageSize = 30
     private var currentPage = 0
     private var requestInFlight = false
     private var favoriteIds = emptySet<String>()
