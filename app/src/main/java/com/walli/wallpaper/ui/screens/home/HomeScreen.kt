@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -255,8 +256,18 @@ private fun HomeScreen(
 
                             when {
                                 state.loadState is LoadState.Loading && state.wallpapers.isEmpty() -> {
-                                    items(8) {
-                                        WallpaperCardShimmer()
+                                    item(span = { GridItemSpan(maxLineSpan) }) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(400.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            CircularProgressIndicator(
+                                                color = MaterialTheme.colorScheme.primary,
+                                                strokeWidth = 3.dp
+                                            )
+                                        }
                                     }
                                 }
 
@@ -280,6 +291,13 @@ private fun HomeScreen(
                                             sharedTransitionScope = sharedTransitionScope,
                                             animatedVisibilityScope = animatedVisibilityScope
                                         )
+                                    }
+
+                                    // Add shimmers at the bottom when loading more (Appending)
+                                    if (state.loadState is LoadState.Appending) {
+                                        items(2) {
+                                            WallpaperCardShimmer()
+                                        }
                                     }
                                 }
                             }

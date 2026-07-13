@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -43,6 +44,7 @@ import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SnackbarHost
@@ -72,7 +74,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.palette.graphics.Palette
 import coil3.SingletonImageLoader
-import coil3.compose.AsyncImage
+import coil3.compose.SubcomposeAsyncImage
 import coil3.asDrawable
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
@@ -82,6 +84,7 @@ import com.walli.wallpaper.ads.AdsViewModel
 import com.walli.wallpaper.domain.model.WallpaperTarget
 import com.walli.wallpaper.ui.components.NoInternetState
 import com.walli.wallpaper.ui.components.EmptyState
+import com.walli.wallpaper.ui.components.PremiumLoader
 import com.walli.wallpaper.util.findActivity
 import kotlinx.coroutines.flow.collectLatest
 
@@ -243,7 +246,7 @@ fun PreviewRoute(
                         imageModifier
                     }
 
-                    AsyncImage(
+                    SubcomposeAsyncImage(
                         model = ImageRequest.Builder(context)
                             .data(wallpaper.imageUrl)
                             .diskCachePolicy(CachePolicy.ENABLED)
@@ -252,6 +255,17 @@ fun PreviewRoute(
                         contentDescription = wallpaper.title,
                         modifier = sharedImageModifier,
                         contentScale = ContentScale.Crop,
+                        loading = {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                PremiumLoader(
+                                    isPremium = wallpaper.isPremium,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
                     )
                     Box(
                         modifier = Modifier
@@ -474,18 +488,63 @@ fun PreviewRoute(
             }
 
             if (state.isWorking) {
-                Surface(
-                    modifier = Modifier.align(Alignment.Center),
-                    shape = RoundedCornerShape(28.dp),
-                    color = animatedDominantColor.copy(alpha = 0.85f),
+                val currentWallpaper = state.items.getOrNull(pagerState.currentPage % state.items.size)
+                val isPremiumAction = currentWallpaper?.isPremium == true
+                val accentColor = if (isPremiumAction) Color(0xFFFFD700) else onDominantColor
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.6f))
+                        .clickable(enabled = false) { },
+                    contentAlignment = Alignment.Center
                 ) {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 18.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    Surface(
+                        shape = RoundedCornerShape(32.dp),
+                        color = animatedDominantColor.copy(alpha = 0.95f),
+                        tonalElevation = 16.dp,
+                        shadowElevation = 24.dp,
+                        modifier = Modifier.padding(32.dp)
                     ) {
-                        CircularProgressIndicator(color = onDominantColor)
-                        Text(state.workingLabel ?: "Working…", color = onDominantColor)
+                        Column(
+                            modifier = Modifier.padding(horizontal = 48.dp, vertical = 40.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(24.dp),
+                        ) {
+                            PremiumLoader(
+                                isPremium = isPremiumAction,
+                                color = onDominantColor,
+                                label = null // Just the spinner here
+                            )
+                            
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = state.workingLabel ?: "Processing…",
+                                    color = onDominantColor,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.ExtraBold,
+                                )
+                                if (isPremiumAction) {
+                                    Text(
+                                        text = "Unlocking Premium",
+                                        color = accentColor,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(top = 4.dp)
+                                    )
+                                }
+                            }
+                            
+                            // "Progressing" feel with a sleek linear bar
+                            LinearProgressIndicator(
+                                modifier = Modifier
+                                    .width(120.dp)
+                                    .height(4.dp),
+                                color = accentColor,
+                                trackColor = accentColor.copy(alpha = 0.2f),
+                                strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
+                            )
+                        }
                     }
                 }
             }

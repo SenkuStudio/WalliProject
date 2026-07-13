@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material3.*
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
@@ -141,8 +142,19 @@ private fun CategoryWallpapersScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             if (state.loadState is LoadState.Loading && state.wallpapers.isEmpty()) {
-                items(8) {
-                    WallpaperCardShimmer()
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .fillMaxHeight()
+                            .padding(top = 100.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            color = MaterialTheme.colorScheme.primary,
+                            strokeWidth = 3.dp
+                        )
+                    }
                 }
             } else if (state.wallpapers.isEmpty() && state.loadState is LoadState.Idle) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
