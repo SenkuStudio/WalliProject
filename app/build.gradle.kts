@@ -19,7 +19,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
 
-        buildConfigField("String", "BASE_URL", "\"http://10.145.1.23/walli-php-backend/\"")
+        buildConfigField("String", "BASE_URL", "\"http://10.204.248.23/walli-php-backend/\"")
         buildConfigField("String", "API_KEY", "\"wapi_109ae2701211bcffa038ce05ac160cba82d440c941af9070\"")
         buildConfigField("String", "ADMOB_BANNER_ID", "\"ca-app-pub-3940256099942544/9214589741\"")
         buildConfigField("String", "ADMOB_INTERSTITIAL_ID", "\"ca-app-pub-3940256099942544/1033173712\"")
@@ -116,7 +116,6 @@ dependencies {
     implementation(libs.coil.network.okhttp)
 
     implementation(libs.ads)
-    implementation(libs.unity.ads)
     implementation(libs.coroutines.android)
     implementation(libs.palette.ktx)
 

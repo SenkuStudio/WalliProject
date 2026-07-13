@@ -6,10 +6,15 @@ import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.OnUserEarnedRewardListener
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
+import com.google.android.gms.ads.rewarded.RewardedAd
+import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
 import com.walli.wallpaper.BuildConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -18,11 +23,17 @@ class AdMobManager @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
     private var interstitialAd: InterstitialAd? = null
+    private var rewardedAd: RewardedAd? = null
+    
+    private val _isRewardedLoaded = MutableStateFlow(false)
+    val isRewardedLoaded = _isRewardedLoaded.asStateFlow()
+
     private var openCounter = 0
     private var downloadCounter = 0
 
     fun warmUp() {
         loadInterstitial()
+        loadRewarded()
     }
 
     fun maybeShowOpenInterstitial(activity: Activity?, onContinue: () -> Unit) {
@@ -67,6 +78,43 @@ class AdMobManager @Inject constructor(
         interstitial.show(activity)
     }
 
+    fun showRewarded(
+        activity: Activity?,
+        onReward: () -> Unit,
+        onDismiss: () -> Unit = {},
+    ) {
+        val rewarded = rewardedAd
+        if (activity == null || rewarded == null) {
+            // Bypass if ad is not ready, as per existing logic in ViewModel
+            onReward()
+            onDismiss()
+            loadRewarded()
+            return
+        }
+
+        rewarded.fullScreenContentCallback = object : FullScreenContentCallback() {
+            override fun onAdDismissedFullScreenContent() {
+                rewardedAd = null
+                _isRewardedLoaded.value = false
+                loadRewarded()
+                onDismiss()
+            }
+
+            override fun onAdFailedToShowFullScreenContent(adError: AdError) {
+                rewardedAd = null
+                _isRewardedLoaded.value = false
+                loadRewarded()
+                // Bypass failure to not block user
+                onReward()
+                onDismiss()
+            }
+        }
+
+        rewarded.show(activity, OnUserEarnedRewardListener {
+            onReward()
+        })
+    }
+
     private fun loadInterstitial() {
         if (BuildConfig.ADMOB_INTERSTITIAL_ID.isBlank()) return
         InterstitialAd.load(
@@ -82,6 +130,26 @@ class AdMobManager @Inject constructor(
                     interstitialAd = null
                 }
             },
+        )
+    }
+
+    private fun loadRewarded() {
+        if (BuildConfig.ADMOB_REWARDED_ID.isBlank()) return
+        RewardedAd.load(
+            context,
+            BuildConfig.ADMOB_REWARDED_ID,
+            AdRequest.Builder().build(),
+            object : RewardedAdLoadCallback() {
+                override fun onAdLoaded(ad: RewardedAd) {
+                    rewardedAd = ad
+                    _isRewardedLoaded.value = true
+                }
+
+                override fun onAdFailedToLoad(loadAdError: LoadAdError) {
+                    rewardedAd = null
+                    _isRewardedLoaded.value = false
+                }
+            }
         )
     }
 }
