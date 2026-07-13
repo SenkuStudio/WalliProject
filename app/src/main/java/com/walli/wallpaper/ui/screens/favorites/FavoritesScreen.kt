@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.platform.LocalConfiguration
 import com.walli.wallpaper.ui.common.LoadState
 import com.walli.wallpaper.ui.components.EmptyState
 import com.walli.wallpaper.ui.components.WallpaperCard
@@ -33,6 +34,12 @@ fun FavoritesRoute(
     viewModel: FavoritesViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val configuration = LocalConfiguration.current
+    val columns = when {
+        configuration.screenWidthDp >= 900 -> 4
+        configuration.screenWidthDp >= 600 -> 3
+        else -> 2
+    }
 
     Scaffold(
         topBar = {
@@ -56,7 +63,7 @@ fun FavoritesRoute(
             when (state.loadState) {
                 LoadState.Loading -> {
                     LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
+                        columns = GridCells.Fixed(columns),
                         contentPadding = PaddingValues(16.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -80,7 +87,7 @@ fun FavoritesRoute(
                 }
                 else -> {
                     LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
+                        columns = GridCells.Fixed(columns),
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 100.dp, top = 8.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp),

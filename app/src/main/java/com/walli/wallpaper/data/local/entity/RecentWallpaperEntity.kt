@@ -14,4 +14,5 @@ data class RecentWallpaperEntity(
     val createdAt: String,
     val isPremium: Boolean,
     val viewedAt: Long,
+    val blurHash: String? = null,
 )

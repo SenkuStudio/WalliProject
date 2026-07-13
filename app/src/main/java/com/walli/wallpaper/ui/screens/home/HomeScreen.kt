@@ -53,6 +53,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.walli.wallpaper.ads.AdsViewModel
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalConfiguration
 import com.walli.wallpaper.domain.model.WallpaperSort
 import com.walli.wallpaper.ui.common.LoadState
 import com.walli.wallpaper.ui.components.BannerAd
@@ -117,6 +119,12 @@ private fun HomeScreen(
 ) {
     val gridState = rememberLazyGridState()
     val pullState = rememberPullToRefreshState()
+    val configuration = LocalConfiguration.current
+    val columns = when {
+        configuration.screenWidthDp >= 900 -> 4
+        configuration.screenWidthDp >= 600 -> 3
+        else -> 2
+    }
 
     ObserveGridPagination(
         gridState = gridState,
@@ -157,7 +165,7 @@ private fun HomeScreen(
                     ) {
                         LazyVerticalGrid(
                             state = gridState,
-                            columns = GridCells.Fixed(2),
+                            columns = GridCells.Fixed(columns),
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(
                                 start = 16.dp,

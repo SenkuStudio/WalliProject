@@ -27,6 +27,7 @@ data class WallpaperDto(
     @SerializedName("created_at") val createdAt: String,
     @SerializedName("is_featured") val isFeatured: Boolean = false,
     @SerializedName("category") val category: CategoryDto,
+    @SerializedName("blur_hash") val blurHash: String? = null,
 )
 
 data class CategoryDto(

@@ -10,4 +10,5 @@ data class Wallpaper(
     val createdAt: String,
     val isPremium: Boolean = false,
     val isFavorite: Boolean = false,
+    val blurHash: String? = null,
 )

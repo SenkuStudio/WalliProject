@@ -18,6 +18,7 @@ internal fun WallpaperDto.toDomainOrNull(): Wallpaper? {
         downloads = downloads,
         createdAt = createdAt,
         isPremium = isFeatured,
+        blurHash = blurHash,
     )
 }
 
@@ -38,6 +39,7 @@ internal fun Wallpaper.toFavoriteEntity(now: Long): FavoriteWallpaperEntity = Fa
     createdAt = createdAt,
     isPremium = isPremium,
     addedAt = now,
+    blurHash = blurHash,
 )
 
 internal fun FavoriteWallpaperEntity.toDomain(): Wallpaper = Wallpaper(
@@ -50,6 +52,7 @@ internal fun FavoriteWallpaperEntity.toDomain(): Wallpaper = Wallpaper(
     createdAt = createdAt,
     isPremium = isPremium,
     isFavorite = true,
+    blurHash = blurHash,
 )
 
 internal fun Wallpaper.toRecentEntity(now: Long): RecentWallpaperEntity = RecentWallpaperEntity(
@@ -62,6 +65,7 @@ internal fun Wallpaper.toRecentEntity(now: Long): RecentWallpaperEntity = Recent
     createdAt = createdAt,
     isPremium = isPremium,
     viewedAt = now,
+    blurHash = blurHash,
 )
 
 internal fun RecentWallpaperEntity.toDomain(): Wallpaper = Wallpaper(
@@ -73,4 +77,5 @@ internal fun RecentWallpaperEntity.toDomain(): Wallpaper = Wallpaper(
     downloads = downloads,
     createdAt = createdAt,
     isPremium = isPremium,
+    blurHash = blurHash,
 )

@@ -25,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -34,6 +35,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.asImageBitmap
 import coil3.compose.AsyncImage
 import androidx.compose.ui.platform.LocalContext
 import coil3.request.ImageRequest
@@ -41,6 +43,7 @@ import coil3.request.crossfade
 import coil3.size.Precision
 import coil3.size.Size
 import com.walli.wallpaper.domain.model.Wallpaper
+import com.walli.wallpaper.util.blurhash.BlurhashDecoder
 
 @OptIn(androidx.compose.animation.ExperimentalSharedTransitionApi::class)
 @Composable
@@ -51,6 +54,12 @@ fun WallpaperCard(
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
     onClick: () -> Unit,
 ) {
+    val placeholder = remember(wallpaper.blurHash) {
+        wallpaper.blurHash?.let { 
+            BlurhashDecoder.decode(it, 4, 6)?.asImageBitmap()
+        }
+    }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -89,6 +98,9 @@ fun WallpaperCard(
                 contentDescription = wallpaper.title,
                 modifier = sharedImageModifier,
                 contentScale = ContentScale.Crop,
+                placeholder = placeholder?.let { 
+                    androidx.compose.ui.graphics.painter.BitmapPainter(it)
+                }
             )
 
             Box(

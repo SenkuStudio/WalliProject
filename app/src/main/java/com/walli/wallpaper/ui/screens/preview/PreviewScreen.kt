@@ -72,7 +72,9 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.palette.graphics.Palette
+import com.walli.wallpaper.util.blurhash.BlurhashDecoder
 import coil3.SingletonImageLoader
 import coil3.compose.SubcomposeAsyncImage
 import coil3.asDrawable
@@ -80,6 +82,7 @@ import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import coil3.request.allowHardware
+import coil3.request.crossfade
 import com.walli.wallpaper.ads.AdsViewModel
 import com.walli.wallpaper.domain.model.WallpaperTarget
 import com.walli.wallpaper.ui.components.NoInternetState
@@ -142,6 +145,7 @@ fun PreviewRoute(
             val loader = SingletonImageLoader.get(context)
             val request = ImageRequest.Builder(context)
                 .data(imageUrl)
+                .size(128, 128) // Smaller size is sufficient for Palette extraction
                 .allowHardware(false) // Required to convert to bitmap
                 .build()
             
@@ -221,6 +225,13 @@ fun PreviewRoute(
                 if (state.items.isEmpty()) return@HorizontalPager
                 val actualPage = page % state.items.size
                 val wallpaper = state.items[actualPage]
+
+                val placeholder = remember(wallpaper.blurHash) {
+                    wallpaper.blurHash?.let {
+                        BlurhashDecoder.decode(it, 4, 6)?.asImageBitmap()
+                    }
+                }
+
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -246,6 +257,7 @@ fun PreviewRoute(
                     SubcomposeAsyncImage(
                         model = ImageRequest.Builder(context)
                             .data(wallpaper.imageUrl)
+                            .crossfade(true)
                             .diskCachePolicy(CachePolicy.ENABLED)
                             .memoryCachePolicy(CachePolicy.ENABLED)
                             .build(),
@@ -257,6 +269,14 @@ fun PreviewRoute(
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center
                             ) {
+                                placeholder?.let { 
+                                    androidx.compose.foundation.Image(
+                                        bitmap = it,
+                                        contentDescription = null,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
                                 PremiumLoader(
                                     isPremium = wallpaper.isPremium,
                                     color = MaterialTheme.colorScheme.primary

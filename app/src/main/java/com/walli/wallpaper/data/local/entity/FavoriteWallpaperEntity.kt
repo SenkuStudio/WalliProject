@@ -14,4 +14,5 @@ data class FavoriteWallpaperEntity(
     val createdAt: String,
     val isPremium: Boolean,
     val addedAt: Long,
+    val blurHash: String? = null,
 )

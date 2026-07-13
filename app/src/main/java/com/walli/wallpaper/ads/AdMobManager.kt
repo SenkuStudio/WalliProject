@@ -2,6 +2,9 @@ package com.walli.wallpaper.ads
 
 import android.app.Activity
 import android.content.Context
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
@@ -21,7 +24,7 @@ import javax.inject.Singleton
 @Singleton
 class AdMobManager @Inject constructor(
     @ApplicationContext private val context: Context,
-) {
+) : DefaultLifecycleObserver {
     private var interstitialAd: InterstitialAd? = null
     private var rewardedAd: RewardedAd? = null
     
@@ -30,10 +33,25 @@ class AdMobManager @Inject constructor(
 
     private var openCounter = 0
     private var downloadCounter = 0
+    private var isAppInForeground = false
+
+    init {
+        ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+    }
+
+    override fun onStart(owner: LifecycleOwner) {
+        isAppInForeground = true
+    }
+
+    override fun onStop(owner: LifecycleOwner) {
+        isAppInForeground = false
+    }
 
     fun warmUp() {
-        loadInterstitial()
-        loadRewarded()
+        if (isAppInForeground) {
+            loadInterstitial()
+            loadRewarded()
+        }
     }
 
     fun maybeShowOpenInterstitial(activity: Activity?, onContinue: () -> Unit) {
@@ -58,20 +76,20 @@ class AdMobManager @Inject constructor(
         val interstitial = interstitialAd
         if (activity == null || interstitial == null) {
             onContinue()
-            loadInterstitial()
+            if (isAppInForeground) loadInterstitial()
             return
         }
 
         interstitial.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdDismissedFullScreenContent() {
                 interstitialAd = null
-                loadInterstitial()
+                if (isAppInForeground) loadInterstitial()
                 onContinue()
             }
 
             override fun onAdFailedToShowFullScreenContent(adError: AdError) {
                 interstitialAd = null
-                loadInterstitial()
+                if (isAppInForeground) loadInterstitial()
                 onContinue()
             }
         }
@@ -88,7 +106,7 @@ class AdMobManager @Inject constructor(
             // Bypass if ad is not ready, as per existing logic in ViewModel
             onReward()
             onDismiss()
-            loadRewarded()
+            if (isAppInForeground) loadRewarded()
             return
         }
 
@@ -96,14 +114,14 @@ class AdMobManager @Inject constructor(
             override fun onAdDismissedFullScreenContent() {
                 rewardedAd = null
                 _isRewardedLoaded.value = false
-                loadRewarded()
+                if (isAppInForeground) loadRewarded()
                 onDismiss()
             }
 
             override fun onAdFailedToShowFullScreenContent(adError: AdError) {
                 rewardedAd = null
                 _isRewardedLoaded.value = false
-                loadRewarded()
+                if (isAppInForeground) loadRewarded()
                 // Bypass failure to not block user
                 onReward()
                 onDismiss()
@@ -116,6 +134,7 @@ class AdMobManager @Inject constructor(
     }
 
     private fun loadInterstitial() {
+        if (!isAppInForeground) return
         if (BuildConfig.ADMOB_INTERSTITIAL_ID.isBlank()) return
         InterstitialAd.load(
             context,
@@ -134,6 +153,7 @@ class AdMobManager @Inject constructor(
     }
 
     private fun loadRewarded() {
+        if (!isAppInForeground) return
         if (BuildConfig.ADMOB_REWARDED_ID.isBlank()) return
         RewardedAd.load(
             context,
@@ -153,3 +173,4 @@ class AdMobManager @Inject constructor(
         )
     }
 }
+

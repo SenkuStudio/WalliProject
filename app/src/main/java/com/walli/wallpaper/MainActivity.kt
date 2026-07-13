@@ -28,7 +28,6 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        MobileAds.initialize(this)
 
         setContent {
             val theme by settingsManager.theme.collectAsState(initial = AppTheme.SYSTEM)
