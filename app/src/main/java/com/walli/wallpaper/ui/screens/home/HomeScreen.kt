@@ -52,6 +52,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -238,13 +239,19 @@ private fun HomeScreen(
 
                                     LazyRow(
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        contentPadding = PaddingValues(bottom = 4.dp)
+                                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp)
                                     ) {
                                         items(state.categories) { category ->
                                             FilterChip(
                                                 selected = state.selectedCategoryId == category.id,
                                                 onClick = { onCategorySelected(category) },
-                                                label = { Text(category.name.orEmpty()) },
+                                                label = { 
+                                                    Text(
+                                                        category.name.orEmpty(),
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis
+                                                    ) 
+                                                },
                                                 shape = RoundedCornerShape(12.dp)
                                             )
                                         }
@@ -252,13 +259,19 @@ private fun HomeScreen(
 
                                     LazyRow(
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        contentPadding = PaddingValues(bottom = 8.dp)
+                                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp)
                                     ) {
                                         items(WallpaperSort.entries) { sort ->
                                             FilterChip(
                                                 selected = state.sort == sort,
                                                 onClick = { onSortSelected(sort) },
-                                                label = { Text(sort.label) },
+                                                label = { 
+                                                    Text(
+                                                        sort.label,
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis
+                                                    ) 
+                                                },
                                                 shape = RoundedCornerShape(12.dp)
                                             )
                                         }

@@ -65,7 +65,9 @@ fun WalliBottomBar(
                     label = { 
                         Text(
                             text = route.label ?: "",
-                            style = MaterialTheme.typography.labelMedium
+                            style = MaterialTheme.typography.labelSmall,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                         ) 
                     },
                     colors = NavigationBarItemDefaults.colors(

@@ -283,7 +283,7 @@ fun PreviewRoute(
                             if (!isLoaded) return@pointerInput
                             detectTransformGestures(panZoomLock = false) { centroid, pan, zoom, rotation ->
                                 val current = currentTransformationState.value
-                                val newScale = (current.scale * zoom).coerceIn(1f, 5f)
+                                val newScale = (current.scale * zoom).coerceIn(0.5f, 5f)
                                 
                                 val newOffset = if (newScale > 1f) {
                                     // Calculate center-zoom offset adjustment
@@ -547,7 +547,7 @@ fun PreviewRoute(
                             Spacer(modifier = Modifier.height(16.dp))
 
                             val screenWidth = LocalConfiguration.current.screenWidthDp
-                            val showLabels = screenWidth > 360
+                            val showLabels = screenWidth > 400
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -563,8 +563,8 @@ fun PreviewRoute(
                                             adsViewModel.maybeShowDownloadInterstitial(activity, action)
                                         }
                                     },
-                                    modifier = Modifier.weight(1f),
-                                    contentPadding = PaddingValues(horizontal = if (showLabels) 12.dp else 8.dp),
+                                    modifier = Modifier.weight(1f, fill = showLabels),
+                                    contentPadding = PaddingValues(horizontal = if (showLabels) 12.dp else 4.dp),
                                     colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
                                         containerColor = onDominantColor.copy(alpha = 0.15f),
                                         contentColor = onDominantColor
@@ -581,14 +581,15 @@ fun PreviewRoute(
                                             text = "Download",
                                             style = MaterialTheme.typography.labelMedium,
                                             maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis, softWrap = false
+                                            overflow = TextOverflow.Ellipsis,
+                                            softWrap = false
                                         )
                                     }
                                 }
                                 FilledTonalButton(
                                     onClick = { showSetSheet = true },
-                                    modifier = Modifier.weight(1f),
-                                    contentPadding = PaddingValues(horizontal = if (showLabels) 12.dp else 8.dp),
+                                    modifier = Modifier.weight(1f, fill = showLabels),
+                                    contentPadding = PaddingValues(horizontal = if (showLabels) 12.dp else 4.dp),
                                     colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
                                         containerColor = onDominantColor.copy(alpha = 0.15f),
                                         contentColor = onDominantColor
@@ -605,7 +606,8 @@ fun PreviewRoute(
                                             text = "Set",
                                             style = MaterialTheme.typography.labelMedium,
                                             maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis, softWrap = false
+                                            overflow = TextOverflow.Ellipsis,
+                                            softWrap = false
                                         )
                                     }
                                 }
