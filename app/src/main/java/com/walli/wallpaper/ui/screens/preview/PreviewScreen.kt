@@ -344,6 +344,7 @@ fun PreviewRoute(
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center
                             ) {
+                                // 1. BlurHash (Static Layer)
                                 placeholder?.let { bitmap ->
                                     androidx.compose.foundation.Image(
                                         bitmap = bitmap,
@@ -352,6 +353,19 @@ fun PreviewRoute(
                                         contentScale = ContentScale.Crop
                                     )
                                 }
+                                
+                                // 2. Thumbnail (Instant Layer - Matches Grid Cache)
+                                coil3.compose.AsyncImage(
+                                    model = ImageRequest.Builder(context)
+                                        .data(wallpaper.thumbnailUrl)
+                                        .size(320, 480) // Exact same size as WallpaperCard for cache hit
+                                        .precision(coil3.size.Precision.INEXACT)
+                                        .build(),
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+
                                 PremiumLoader(
                                     isPremium = wallpaper.isPremium,
                                     color = MaterialTheme.colorScheme.primary

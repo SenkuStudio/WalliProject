@@ -100,34 +100,38 @@ fun WallpaperCard(
 
             val shimmerBrush = rememberShimmerBrush()
 
-            SubcomposeAsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(wallpaper.thumbnailUrl)
-                    .crossfade(true)
-                    .size(Size(400, 600)) // Specific size for thumbnails
-                    .precision(Precision.EXACT)
-                    .build(),
-                contentDescription = wallpaper.title,
-                modifier = sharedImageModifier,
-                contentScale = ContentScale.Crop,
-                loading = {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        placeholder?.let { 
-                            Image(
-                                bitmap = it,
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                        }
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(shimmerBrush)
+            // Apply shared element to the container so everything (BlurHash + Shimmer + Image) moves together
+            Box(modifier = sharedImageModifier) {
+                // Layer 1: BlurHash + Shimmer (Immediate)
+                Box(modifier = Modifier.fillMaxSize()) {
+                    placeholder?.let { 
+                        Image(
+                            bitmap = it,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
                         )
                     }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(shimmerBrush)
+                    )
                 }
-            )
+
+                // Layer 2: Actual Thumbnail
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(wallpaper.thumbnailUrl)
+                        .crossfade(true)
+                        .size(320, 480) // Standardized grid size
+                        .precision(coil3.size.Precision.INEXACT)
+                        .build(),
+                    contentDescription = wallpaper.title,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                )
+            }
 
             Box(
                 modifier = Modifier

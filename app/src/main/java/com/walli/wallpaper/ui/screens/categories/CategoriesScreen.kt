@@ -136,19 +136,22 @@ private fun CategoryCard(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             if (coverUrl != null) {
-                SubcomposeAsyncImage(
-                    model = coverUrl,
-                    contentDescription = name,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                    loading = {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(rememberShimmerBrush())
-                        )
-                    }
-                )
+                val shimmerBrush = rememberShimmerBrush()
+                Box(modifier = Modifier.fillMaxSize()) {
+                    // Shimmer Layer
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(shimmerBrush)
+                    )
+                    // Image Layer
+                    coil3.compose.AsyncImage(
+                        model = coverUrl,
+                        contentDescription = name,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
             }
             
             Box(

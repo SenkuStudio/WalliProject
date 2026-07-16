@@ -91,33 +91,37 @@ fun FeaturedHeroCard(
 
             val shimmerBrush = rememberShimmerBrush(targetValue = 2000f, durationMillis = 1400)
 
-            SubcomposeAsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(wallpaper.thumbnailUrl)
-                    .crossfade(true)
-                    .size(Size(800, 400))
-                    .build(),
-                contentDescription = wallpaper.title,
-                contentScale = ContentScale.Crop,
-                modifier = sharedImageModifier,
-                loading = {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        placeholder?.let {
-                            Image(
-                                bitmap = it,
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                        }
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(shimmerBrush)
+            Box(modifier = sharedImageModifier) {
+                // Layer 1: BlurHash + Shimmer (Immediate)
+                Box(modifier = Modifier.fillMaxSize()) {
+                    placeholder?.let {
+                        Image(
+                            bitmap = it,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
                         )
                     }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(shimmerBrush)
+                    )
                 }
-            )
+
+                // Layer 2: Actual Thumbnail
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(wallpaper.thumbnailUrl)
+                        .crossfade(true)
+                        .size(640, 360) // Standardized hero thumbnail size
+                        .precision(coil3.size.Precision.INEXACT)
+                        .build(),
+                    contentDescription = wallpaper.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
             Box(
                 modifier = Modifier
                     .fillMaxSize()
