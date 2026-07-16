@@ -337,7 +337,8 @@ fun PreviewRoute(
                             .build(),
                         contentDescription = wallpaper.title,
                         modifier = sharedImageModifier,
-                        contentScale = ContentScale.Crop,
+                        contentScale = ContentScale.Fit,
+                        alignment = Alignment.Center,
                         onSuccess = { isLoaded = true },
                         loading = {
                             Box(
@@ -350,7 +351,8 @@ fun PreviewRoute(
                                         bitmap = bitmap,
                                         contentDescription = null,
                                         modifier = Modifier.fillMaxSize(),
-                                        contentScale = ContentScale.Crop
+                                        contentScale = ContentScale.Fit,
+                                        alignment = Alignment.Center
                                     )
                                 }
                                 
@@ -363,7 +365,8 @@ fun PreviewRoute(
                                         .build(),
                                     contentDescription = null,
                                     modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Crop
+                                    contentScale = ContentScale.Fit,
+                                    alignment = Alignment.Center
                                 )
 
                                 PremiumLoader(
