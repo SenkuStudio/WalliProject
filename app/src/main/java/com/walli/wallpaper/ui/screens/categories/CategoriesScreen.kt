@@ -35,11 +35,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil3.compose.AsyncImage
+import coil3.compose.SubcomposeAsyncImage
 import com.walli.wallpaper.domain.model.WallpaperCategory
 import com.walli.wallpaper.ui.common.LoadState
 import com.walli.wallpaper.ui.components.EmptyState
 import com.walli.wallpaper.ui.components.NoInternetState
+import com.walli.wallpaper.ui.components.rememberShimmerBrush
 
 @OptIn(androidx.compose.animation.ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -76,14 +77,16 @@ fun CategoriesRoute(
         } else {
             when (state.loadState) {
                 is LoadState.Loading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(1),
+                        modifier = Modifier.fillMaxSize().padding(padding),
+                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 100.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
-                        CircularProgressIndicator(
-                            color = MaterialTheme.colorScheme.primary,
-                            strokeWidth = 3.dp
-                        )
+                        items(6) {
+                            com.walli.wallpaper.ui.components.CategoryCardShimmer()
+                        }
                     }
                 }
                 is LoadState.Error -> EmptyState(
@@ -133,11 +136,18 @@ private fun CategoryCard(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             if (coverUrl != null) {
-                AsyncImage(
+                SubcomposeAsyncImage(
                     model = coverUrl,
                     contentDescription = name,
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    loading = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(rememberShimmerBrush())
+                        )
+                    }
                 )
             }
             

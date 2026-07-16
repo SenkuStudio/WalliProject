@@ -2,6 +2,13 @@ package com.walli.wallpaper.ui.components
 
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -18,21 +25,27 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import coil3.compose.SubcomposeAsyncImage
 import androidx.compose.ui.platform.LocalContext
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.size.Size
 import com.walli.wallpaper.domain.model.Wallpaper
+import com.walli.wallpaper.util.blurhash.BlurhashDecoder
 
 @OptIn(androidx.compose.animation.ExperimentalSharedTransitionApi::class)
 @Composable
@@ -43,6 +56,12 @@ fun FeaturedHeroCard(
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
     onClick: () -> Unit,
 ) {
+    val placeholder = remember(wallpaper.blurHash) {
+        wallpaper.blurHash?.let {
+            BlurhashDecoder.decode(it, 4, 6)?.asImageBitmap()
+        }
+    }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -70,7 +89,9 @@ fun FeaturedHeroCard(
                 imageModifier
             }
 
-            AsyncImage(
+            val shimmerBrush = rememberShimmerBrush(targetValue = 2000f, durationMillis = 1400)
+
+            SubcomposeAsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(wallpaper.thumbnailUrl)
                     .crossfade(true)
@@ -79,6 +100,23 @@ fun FeaturedHeroCard(
                 contentDescription = wallpaper.title,
                 contentScale = ContentScale.Crop,
                 modifier = sharedImageModifier,
+                loading = {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        placeholder?.let {
+                            Image(
+                                bitmap = it,
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(shimmerBrush)
+                        )
+                    }
+                }
             )
             Box(
                 modifier = Modifier

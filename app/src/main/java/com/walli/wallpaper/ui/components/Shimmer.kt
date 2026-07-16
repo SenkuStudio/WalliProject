@@ -7,76 +7,86 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
+/**
+ * A reusable shimmer brush that can be applied to any background.
+ */
 @Composable
-fun WallpaperCardShimmer(modifier: Modifier = Modifier) {
-    val shimmerColors = listOf(
-        Color.LightGray.copy(alpha = 0.3f),
-        Color.LightGray.copy(alpha = 0.5f),
-        Color.LightGray.copy(alpha = 0.3f),
+fun rememberShimmerBrush(
+    targetValue: Float = 1000f,
+    durationMillis: Int = 1200,
+    shimmerColors: List<Color> = listOf(
+        Color.White.copy(alpha = 0.05f),
+        Color.White.copy(alpha = 0.2f),
+        Color.White.copy(alpha = 0.05f),
     )
-
+): Brush {
     val transition = rememberInfiniteTransition(label = "shimmer")
     val translateAnim by transition.animateFloat(
         initialValue = 0f,
-        targetValue = 1000f,
+        targetValue = targetValue,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1200, easing = LinearEasing),
+            animation = tween(durationMillis = durationMillis, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "shimmer"
     )
 
-    val brush = Brush.linearGradient(
+    return Brush.linearGradient(
         colors = shimmerColors,
         start = Offset.Zero,
         end = Offset(x = translateAnim, y = translateAnim)
     )
+}
 
+/**
+ * Skeleton shimmer for basic shapes.
+ */
+fun Modifier.shimmerEffect(
+    shape: RoundedCornerShape = RoundedCornerShape(0.dp)
+): Modifier = composed {
+    val brush = rememberShimmerBrush(
+        shimmerColors = listOf(
+            Color.LightGray.copy(alpha = 0.3f),
+            Color.LightGray.copy(alpha = 0.5f),
+            Color.LightGray.copy(alpha = 0.3f),
+        )
+    )
+    this.clip(shape).background(brush)
+}
+
+@Composable
+fun WallpaperCardShimmer(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .aspectRatio(0.7f)
-            .clip(RoundedCornerShape(32.dp))
-            .background(brush)
+            .aspectRatio(0.68f) // Match WallpaperCard aspect ratio
+            .shimmerEffect(RoundedCornerShape(24.dp))
     )
 }
 
 @Composable
 fun FeaturedHeroShimmer() {
-    val shimmerColors = listOf(
-        Color.LightGray.copy(alpha = 0.3f),
-        Color.LightGray.copy(alpha = 0.5f),
-        Color.LightGray.copy(alpha = 0.3f),
-    )
-
-    val transition = rememberInfiniteTransition(label = "heroShimmer")
-    val translateAnim by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 2000f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1400, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "heroShimmer"
-    )
-
-    val brush = Brush.linearGradient(
-        colors = shimmerColors,
-        start = Offset.Zero,
-        end = Offset(x = translateAnim, y = translateAnim)
-    )
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(480.dp)
-            .clip(RoundedCornerShape(32.dp))
-            .background(brush)
+            .height(260.dp) // Match FeaturedHeroCard height
+            .shimmerEffect(RoundedCornerShape(32.dp))
+    )
+}
+
+@Composable
+fun CategoryCardShimmer() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(21f / 9f)
+            .shimmerEffect(RoundedCornerShape(24.dp))
     )
 }

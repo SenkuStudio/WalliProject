@@ -149,19 +149,8 @@ private fun CategoryWallpapersScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             if (state.loadState is LoadState.Loading && state.wallpapers.isEmpty()) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .fillMaxHeight()
-                            .padding(top = 100.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(
-                            color = MaterialTheme.colorScheme.primary,
-                            strokeWidth = 3.dp
-                        )
-                    }
+                items(6) {
+                    WallpaperCardShimmer()
                 }
             } else if (state.wallpapers.isEmpty() && state.loadState is LoadState.Idle) {
                 item(span = { GridItemSpan(maxLineSpan) }) {

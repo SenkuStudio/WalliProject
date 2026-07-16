@@ -190,6 +190,10 @@ private fun HomeScreen(
                                         animatedVisibilityScope = animatedVisibilityScope
                                     )
                                 }
+                            } else if (state.loadState is LoadState.Loading) {
+                                item(span = { GridItemSpan(maxLineSpan) }) {
+                                    com.walli.wallpaper.ui.components.FeaturedHeroShimmer()
+                                }
                             }
 
                             if (state.recentWallpapers.isNotEmpty()) {
@@ -281,18 +285,8 @@ private fun HomeScreen(
 
                             when {
                                 state.loadState is LoadState.Loading && state.wallpapers.isEmpty() -> {
-                                    item(span = { GridItemSpan(maxLineSpan) }) {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(400.dp),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            CircularProgressIndicator(
-                                                color = MaterialTheme.colorScheme.primary,
-                                                strokeWidth = 3.dp
-                                            )
-                                        }
+                                    items(6) {
+                                        WallpaperCardShimmer()
                                     }
                                 }
 
