@@ -337,7 +337,7 @@ fun PreviewRoute(
                             .build(),
                         contentDescription = wallpaper.title,
                         modifier = sharedImageModifier,
-                        contentScale = ContentScale.Fit,
+                        contentScale = ContentScale.Crop,
                         alignment = Alignment.Center,
                         onSuccess = { isLoaded = true },
                         loading = {
@@ -351,7 +351,7 @@ fun PreviewRoute(
                                         bitmap = bitmap,
                                         contentDescription = null,
                                         modifier = Modifier.fillMaxSize(),
-                                        contentScale = ContentScale.Fit,
+                                        contentScale = ContentScale.Crop,
                                         alignment = Alignment.Center
                                     )
                                 }
@@ -365,14 +365,32 @@ fun PreviewRoute(
                                         .build(),
                                     contentDescription = null,
                                     modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Fit,
+                                    contentScale = ContentScale.Crop,
                                     alignment = Alignment.Center
                                 )
 
-                                PremiumLoader(
-                                    isPremium = wallpaper.isPremium,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
+                                Surface(
+                                    shape = RoundedCornerShape(24.dp),
+                                    color = Color.Black.copy(alpha = 0.2f),
+                                    modifier = Modifier.size(80.dp),
+                                ) {
+                                    Box(
+                                        contentAlignment = Alignment.Center,
+                                        modifier = Modifier.background(
+                                            Brush.linearGradient(
+                                                colors = listOf(
+                                                    Color.White.copy(alpha = 0.15f),
+                                                    Color.White.copy(alpha = 0.05f)
+                                                )
+                                            )
+                                        )
+                                    ) {
+                                        PremiumLoader(
+                                            isPremium = wallpaper.isPremium,
+                                            color = Color.White
+                                        )
+                                    }
+                                }
                             }
                         },
                         error = {

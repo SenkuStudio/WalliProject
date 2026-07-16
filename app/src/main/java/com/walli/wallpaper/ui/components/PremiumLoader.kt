@@ -20,7 +20,7 @@ fun PremiumLoader(
     modifier: Modifier = Modifier,
     color: Color = MaterialTheme.colorScheme.primary,
     isPremium: Boolean = false,
-    label: String? = "Walli"
+    label: String? = null
 ) {
     val progressColor = if (isPremium) Color(0xFFFFD700) else color
     val infiniteTransition = rememberInfiniteTransition(label = "loader")
