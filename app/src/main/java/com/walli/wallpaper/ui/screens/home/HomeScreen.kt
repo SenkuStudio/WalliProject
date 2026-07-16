@@ -39,7 +39,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
@@ -68,6 +71,7 @@ import com.walli.wallpaper.ui.components.FeaturedHeroCard
 import com.walli.wallpaper.ui.components.NoInternetState
 import com.walli.wallpaper.ui.components.WallpaperCard
 import com.walli.wallpaper.ui.components.WallpaperCardShimmer
+import com.walli.wallpaper.ui.components.UnlockPremiumDialog
 import com.walli.wallpaper.util.findActivity
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
@@ -93,7 +97,19 @@ fun HomeRoute(
         }
     }
 
-      HomeScreen(
+    val onWallpaperClick: (Int) -> Unit = { index ->
+        val wallpaper = state.wallpapers.getOrNull(index)
+        if (wallpaper != null && wallpaper.isPremium && !wallpaper.isUnlocked) {
+            viewModel.onWallpaperClick(index)
+        } else {
+            adsViewModel.maybeShowOpenInterstitial(activity) {
+                viewModel.openPreview(index)
+                onOpenPreview()
+            }
+        }
+    }
+
+    HomeScreen(
         state = state,
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = animatedVisibilityScope,
@@ -101,13 +117,24 @@ fun HomeRoute(
         onLoadMore = viewModel::loadMore,
         onSortSelected = viewModel::changeSort,
         onCategorySelected = viewModel::selectCategory,
-        onWallpaperClick = { index ->
-            adsViewModel.maybeShowOpenInterstitial(activity) {
-                viewModel.openPreview(index)
-                onOpenPreview()
-            }
-        },
+        onWallpaperClick = onWallpaperClick,
     )
+
+    state.wallpaperToUnlock?.let { wallpaper ->
+        UnlockPremiumDialog(
+            wallpaper = wallpaper,
+            onDismiss = viewModel::dismissUnlockDialog,
+            onUnlock = {
+                adsViewModel.showRewarded(
+                    activity = activity,
+                    onReward = {
+                        viewModel.unlockWallpaper(wallpaper)
+                        onOpenPreview()
+                    }
+                )
+            }
+        )
+    }
 }
 
 @OptIn(androidx.compose.animation.ExperimentalSharedTransitionApi::class)

@@ -34,6 +34,7 @@ import com.walli.wallpaper.ui.components.EmptyState
 import com.walli.wallpaper.ui.components.NoInternetState
 import com.walli.wallpaper.ui.components.WallpaperCard
 import com.walli.wallpaper.ui.components.WallpaperCardShimmer
+import com.walli.wallpaper.ui.components.UnlockPremiumDialog
 import com.walli.wallpaper.ui.screens.home.HomeUiState
 import com.walli.wallpaper.ui.screens.home.HomeViewModel
 import com.walli.wallpaper.util.findActivity
@@ -58,6 +59,18 @@ fun CategoryWallpapersRoute(
 
     LaunchedEffect(categoryId) {
         viewModel.selectCategory(WallpaperCategory(id = categoryId, name = categoryName))
+    }
+
+    val onWallpaperClick: (Int) -> Unit = { index ->
+        val wallpaper = state.wallpapers.getOrNull(index)
+        if (wallpaper != null && wallpaper.isPremium && !wallpaper.isUnlocked) {
+            viewModel.onWallpaperClick(index)
+        } else {
+            adsViewModel.maybeShowOpenInterstitial(activity) {
+                viewModel.openPreview(index)
+                onOpenPreview()
+            }
+        }
     }
 
     Scaffold(
@@ -95,14 +108,25 @@ fun CategoryWallpapersRoute(
                 animatedVisibilityScope = animatedVisibilityScope,
                 onRefresh = viewModel::refresh,
                 onLoadMore = viewModel::loadMore,
-                onWallpaperClick = { index ->
-                    adsViewModel.maybeShowOpenInterstitial(activity) {
-                        viewModel.openPreview(index)
-                        onOpenPreview()
-                    }
-                },
+                onWallpaperClick = onWallpaperClick,
             )
         }
+    }
+
+    state.wallpaperToUnlock?.let { wallpaper ->
+        UnlockPremiumDialog(
+            wallpaper = wallpaper,
+            onDismiss = viewModel::dismissUnlockDialog,
+            onUnlock = {
+                adsViewModel.showRewarded(
+                    activity = activity,
+                    onReward = {
+                        viewModel.unlockWallpaper(wallpaper)
+                        onOpenPreview()
+                    }
+                )
+            }
+        )
     }
 }
 

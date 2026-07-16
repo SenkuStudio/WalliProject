@@ -9,6 +9,7 @@ data class Wallpaper(
     val downloads: Int,
     val createdAt: String,
     val isPremium: Boolean = false,
+    val isUnlocked: Boolean = false,
     val isFavorite: Boolean = false,
     val blurHash: String? = null,
 )

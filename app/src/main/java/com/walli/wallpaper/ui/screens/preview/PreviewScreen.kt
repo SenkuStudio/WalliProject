@@ -96,9 +96,12 @@ import coil3.request.allowHardware
 import coil3.request.crossfade
 import com.walli.wallpaper.ads.AdsViewModel
 import com.walli.wallpaper.domain.model.WallpaperTarget
+import androidx.compose.ui.draw.blur
+import androidx.compose.material3.ButtonDefaults
 import com.walli.wallpaper.ui.components.NoInternetState
 import com.walli.wallpaper.ui.components.EmptyState
 import com.walli.wallpaper.ui.components.PremiumLoader
+import com.walli.wallpaper.ui.components.UnlockPremiumDialog
 import com.walli.wallpaper.util.findActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
@@ -212,13 +215,7 @@ fun PreviewRoute(
                         onClick = {
                             showSetSheet = false
                             val actualPage = pagerState.currentPage % state.items.size
-                            val action = { viewModel.applyWallpaper(actualPage, target) }
-                            val current = state.items[actualPage]
-                            if (current.isPremium) {
-                                adsViewModel.showRewarded(activity, onReward = action)
-                            } else {
-                                action()
-                            }
+                            viewModel.applyWallpaper(actualPage, target)
                         },
                         modifier = Modifier.fillMaxWidth(),
                         contentPadding = PaddingValues(vertical = 16.dp),
@@ -251,6 +248,7 @@ fun PreviewRoute(
                 if (state.items.isEmpty()) return@HorizontalPager
                 val actualPage = page % state.items.size
                 val wallpaper = state.items[actualPage]
+                val isLocked = wallpaper.isPremium && !wallpaper.isUnlocked
 
                 var isLoaded by remember(wallpaper.id) { mutableStateOf(false) }
 
@@ -267,20 +265,28 @@ fun PreviewRoute(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(Color.Black)
-                        .pointerInput(actualPage) {
+                        .pointerInput(actualPage, isLocked) {
                             detectTapGestures(
                                 onDoubleTap = { tapOffset ->
-                                    viewModel.handleDoubleTap(
-                                        index = actualPage,
-                                        tapOffset = tapOffset,
-                                        center = Offset(size.width / 2f, size.height / 2f)
-                                    )
+                                    if (!isLocked) {
+                                        viewModel.handleDoubleTap(
+                                            index = actualPage,
+                                            tapOffset = tapOffset,
+                                            center = Offset(size.width / 2f, size.height / 2f)
+                                        )
+                                    }
                                 },
-                                onTap = { viewModel.toggleControls() }
+                                onTap = {
+                                    if (isLocked) {
+                                        viewModel.requestUnlock(actualPage)
+                                    } else {
+                                        viewModel.toggleControls()
+                                    }
+                                }
                             )
                         }
-                        .pointerInput(actualPage, isLoaded) {
-                            if (!isLoaded) return@pointerInput
+                        .pointerInput(actualPage, isLoaded, isLocked) {
+                            if (!isLoaded || isLocked) return@pointerInput
                             detectTransformGestures(panZoomLock = false) { centroid, pan, zoom, rotation ->
                                 val current = currentTransformationState.value
                                 val newScale = (current.scale * zoom).coerceIn(0.5f, 5f)
@@ -307,9 +313,9 @@ fun PreviewRoute(
                     val imageModifier = Modifier
                         .fillMaxSize()
                         .graphicsLayer {
-                            val currentScale = if (isLoaded) transformation.scale else 1f
-                            val currentOffset = if (isLoaded) transformation.offset else Offset.Zero
-                            val currentRotation = if (isLoaded) transformation.rotation else 0f
+                            val currentScale = if (isLoaded && !isLocked) transformation.scale else 1f
+                            val currentOffset = if (isLoaded && !isLocked) transformation.offset else Offset.Zero
+                            val currentRotation = if (isLoaded && !isLocked) transformation.rotation else 0f
                             
                             scaleX = currentScale
                             scaleY = currentScale
@@ -317,6 +323,8 @@ fun PreviewRoute(
                             translationY = currentOffset.y
                             rotationZ = currentRotation
                         }
+                        .then(if (isLocked) Modifier.blur(40.dp) else Modifier)
+
                     val sharedImageModifier = if (page == state.initialIndex) {
                         with(sharedTransitionScope) {
                             imageModifier.sharedElement(
@@ -330,7 +338,7 @@ fun PreviewRoute(
 
                     SubcomposeAsyncImage(
                         model = ImageRequest.Builder(context)
-                            .data(wallpaper.imageUrl)
+                            .data(if (isLocked) wallpaper.thumbnailUrl else wallpaper.imageUrl)
                             .crossfade(true)
                             .diskCachePolicy(CachePolicy.ENABLED)
                             .memoryCachePolicy(CachePolicy.ENABLED)
@@ -414,6 +422,11 @@ fun PreviewRoute(
                             }
                         }
                     )
+
+                    if (isLocked) {
+                        LockedOverlay(onUnlock = { viewModel.requestUnlock(actualPage) })
+                    }
+
                     Box(
                         modifier = Modifier
                             .matchParentSize()
@@ -592,10 +605,15 @@ fun PreviewRoute(
                                 FilledTonalButton(
                                     onClick = {
                                         val action = { viewModel.download(actualPage) }
-                                        if (current.isPremium) {
-                                            adsViewModel.showRewarded(activity, onReward = action)
+                                        if (current.isPremium && !current.isUnlocked) {
+                                            viewModel.requestUnlock(actualPage)
                                         } else {
-                                            adsViewModel.maybeShowDownloadInterstitial(activity, action)
+                                            if (current.isPremium) {
+                                                // Already unlocked, no second rewarded ad needed
+                                                action()
+                                            } else {
+                                                adsViewModel.maybeShowDownloadInterstitial(activity, action)
+                                            }
                                         }
                                     },
                                     modifier = Modifier.weight(1f, fill = showLabels),
@@ -622,7 +640,13 @@ fun PreviewRoute(
                                     }
                                 }
                                 FilledTonalButton(
-                                    onClick = { showSetSheet = true },
+                                    onClick = {
+                                        if (current.isPremium && !current.isUnlocked) {
+                                            viewModel.requestUnlock(actualPage)
+                                        } else {
+                                            showSetSheet = true
+                                        }
+                                    },
                                     modifier = Modifier.weight(1f, fill = showLabels),
                                     contentPadding = PaddingValues(horizontal = if (showLabels) 12.dp else 4.dp),
                                     colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
@@ -665,7 +689,13 @@ fun PreviewRoute(
                                     )
                                 }
                                 FilledIconButton(
-                                    onClick = { viewModel.share(actualPage) },
+                                    onClick = {
+                                        if (current.isPremium && !current.isUnlocked) {
+                                            viewModel.requestUnlock(actualPage)
+                                        } else {
+                                            viewModel.share(actualPage)
+                                        }
+                                    },
                                     modifier = Modifier.size(44.dp),
                                     colors = IconButtonDefaults.filledIconButtonColors(
                                         containerColor = onDominantColor.copy(alpha = 0.15f),
@@ -747,15 +777,6 @@ fun PreviewRoute(
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.ExtraBold,
                                 )
-                                if (isPremiumAction) {
-                                    Text(
-                                        text = "Unlocking Premium",
-                                        color = accentColor,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(top = 4.dp)
-                                    )
-                                }
                             }
                             
                             // "Progressing" feel with a sleek linear bar
@@ -777,6 +798,78 @@ fun PreviewRoute(
             hostState = snackbarHostState,
             modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 100.dp)
         )
+    }
+
+    state.wallpaperToUnlock?.let { wallpaper ->
+        UnlockPremiumDialog(
+            wallpaper = wallpaper,
+            onDismiss = viewModel::dismissUnlockDialog,
+            onUnlock = {
+                adsViewModel.showRewarded(
+                    activity = activity,
+                    onReward = {
+                        viewModel.unlockWallpaper(wallpaper)
+                    }
+                )
+            }
+        )
+    }
+}
+
+@Composable
+private fun LockedOverlay(
+    onUnlock: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.4f))
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onUnlock
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = Color.White.copy(alpha = 0.2f),
+                modifier = Modifier.size(80.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Rounded.Lock,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
+            }
+            
+            Text(
+                text = "Premium Wallpaper",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            
+            FilledTonalButton(
+                onClick = onUnlock,
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Icon(Icons.Rounded.Wallpaper, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Unlock to View")
+            }
+        }
     }
 }
 

@@ -3,6 +3,7 @@ package com.walli.wallpaper.ui.screens.preview
 import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.walli.wallpaper.data.local.datastore.WallpaperPreferences
 import com.walli.wallpaper.domain.model.Wallpaper
 import com.walli.wallpaper.domain.model.WallpaperTarget
 import com.walli.wallpaper.domain.usecase.IncrementDownloadUseCase
@@ -38,6 +39,7 @@ data class PreviewUiState(
     val message: String? = null,
     val isOnline: Boolean = true,
     val transformations: Map<Int, ImageTransformation> = emptyMap(),
+    val wallpaperToUnlock: Wallpaper? = null,
 )
 
 @HiltViewModel
@@ -51,20 +53,35 @@ class PreviewViewModel @Inject constructor(
     private val wallpaperApplier: WallpaperApplier,
     private val shareManager: ShareManager,
     private val networkMonitor: NetworkMonitor,
+    private val wallpaperPreferences: WallpaperPreferences,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PreviewUiState())
     val uiState: StateFlow<PreviewUiState> = _uiState.asStateFlow()
 
+    private var favoriteIds = emptySet<String>()
+    private var unlockedIds = emptySet<String>()
+
     init {
         observeNetwork()
         viewModelScope.launch {
-            combine(previewSessionManager.session, observeFavoriteIdsUseCase()) { session, favoriteIds ->
-                session to favoriteIds
-            }.collect { (session, favoriteIds) ->
+            combine(
+                previewSessionManager.session,
+                observeFavoriteIdsUseCase(),
+                wallpaperPreferences.unlockedWallpaperIds
+            ) { session, favorites, unlocks ->
+                Triple(session, favorites, unlocks)
+            }.collect { (session, favorites, unlocks) ->
+                favoriteIds = favorites
+                unlockedIds = unlocks
                 _uiState.update { current ->
                     current.copy(
-                        items = session.items.map { it.copy(isFavorite = it.id in favoriteIds) },
+                        items = session.items.map { wallpaper ->
+                            wallpaper.copy(
+                                isFavorite = wallpaper.id in favorites,
+                                isUnlocked = wallpaper.id in unlocks
+                            )
+                        },
                         initialIndex = session.initialIndex,
                     )
                 }
@@ -90,9 +107,26 @@ class PreviewViewModel @Inject constructor(
 
     fun onPageSettled(index: Int) {
         viewModelScope.launch {
-            _uiState.value.items.getOrNull(index)?.let { wallpaper ->
-                saveRecentWallpaperUseCase(wallpaper)
-            }
+            val wallpaper = _uiState.value.items.getOrNull(index) ?: return@launch
+            saveRecentWallpaperUseCase(wallpaper)
+        }
+    }
+
+    fun requestUnlock(index: Int) {
+        val wallpaper = _uiState.value.items.getOrNull(index) ?: return
+        if (wallpaper.isPremium && !wallpaper.isUnlocked) {
+            _uiState.update { it.copy(wallpaperToUnlock = wallpaper) }
+        }
+    }
+
+    fun dismissUnlockDialog() {
+        _uiState.update { it.copy(wallpaperToUnlock = null) }
+    }
+
+    fun unlockWallpaper(wallpaper: Wallpaper) {
+        viewModelScope.launch {
+            wallpaperPreferences.unlockWallpaper(wallpaper.id)
+            _uiState.update { it.copy(wallpaperToUnlock = null) }
         }
     }
 

@@ -38,7 +38,12 @@ class WallpaperRepositoryImpl @Inject constructor(
             sort = sort.apiValue,
         )
         
-        val wallpapers = response.data.mapNotNull { it.toDomainOrNull() }
+        val wallpapers = response.data.mapIndexedNotNull { index, dto ->
+            val absoluteIndex = ((response.pagination?.page ?: page) - 1) * (response.pagination?.perPage ?: limit) + index
+            dto.toDomainOrNull()?.copy(
+                isPremium = (absoluteIndex + 1) % 3 == 0
+            )
+        }
 
         // Cache the first page of "Latest" for fast startup
         if (page == 1 && categoryId == null && query.isNullOrBlank() && sort == WallpaperSort.LATEST) {

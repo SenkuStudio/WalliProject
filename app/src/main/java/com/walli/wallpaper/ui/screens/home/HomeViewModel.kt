@@ -25,6 +25,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+import com.walli.wallpaper.data.local.datastore.WallpaperPreferences
+import kotlinx.coroutines.flow.combine
+
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val getWallpapersUseCase: GetWallpapersUseCase,
@@ -35,6 +38,7 @@ class HomeViewModel @Inject constructor(
     private val toggleFavoriteUseCase: ToggleFavoriteUseCase,
     private val previewSessionManager: PreviewSessionManager,
     private val networkMonitor: NetworkMonitor,
+    private val wallpaperPreferences: WallpaperPreferences,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -47,10 +51,11 @@ class HomeViewModel @Inject constructor(
     private var currentPage = 0
     private var requestInFlight = false
     private var favoriteIds = emptySet<String>()
+    private var unlockedIds = emptySet<String>()
 
     init {
         observeNetwork()
-        observeFavorites()
+        observeFavoritesAndUnlocks()
         observeRecents()
         observeCache()
         loadCategories()
@@ -74,7 +79,7 @@ class HomeViewModel @Inject constructor(
             observeLatestCachedWallpapersUseCase(pageSize).collect { cached ->
                 val state = _uiState.value
                 if (state.wallpapers.isEmpty() && state.selectedCategoryId == null && state.sort == WallpaperSort.LATEST) {
-                    _uiState.update { it.copy(wallpapers = markFavorites(cached)) }
+                    _uiState.update { it.copy(wallpapers = markMetadata(cached)) }
                 }
             }
         }
@@ -119,16 +124,52 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private fun observeFavorites() {
+    private fun observeFavoritesAndUnlocks() {
         viewModelScope.launch {
-            observeFavoriteIdsUseCase().collect { ids ->
-                favoriteIds = ids
+            combine(
+                observeFavoriteIdsUseCase(),
+                wallpaperPreferences.unlockedWallpaperIds
+            ) { favorites, unlocks ->
+                favoriteIds = favorites
+                unlockedIds = unlocks
                 _uiState.update { state ->
                     state.copy(
-                        wallpapers = markFavorites(state.wallpapers),
-                        recentWallpapers = markFavorites(state.recentWallpapers),
+                        wallpapers = markMetadata(state.wallpapers),
+                        recentWallpapers = markMetadata(state.recentWallpapers),
                     )
                 }
+            }.collect {}
+        }
+    }
+
+    private fun markMetadata(items: List<Wallpaper>): List<Wallpaper> =
+        items.map { wallpaper ->
+            wallpaper.copy(
+                isFavorite = wallpaper.id in favoriteIds,
+                isUnlocked = wallpaper.id in unlockedIds
+            )
+        }
+
+    fun onWallpaperClick(index: Int) {
+        val wallpaper = _uiState.value.wallpapers.getOrNull(index) ?: return
+        if (wallpaper.isPremium && !wallpaper.isUnlocked) {
+            _uiState.update { it.copy(wallpaperToUnlock = wallpaper) }
+        } else {
+            openPreview(index)
+        }
+    }
+
+    fun dismissUnlockDialog() {
+        _uiState.update { it.copy(wallpaperToUnlock = null) }
+    }
+
+    fun unlockWallpaper(wallpaper: Wallpaper) {
+        viewModelScope.launch {
+            wallpaperPreferences.unlockWallpaper(wallpaper.id)
+            _uiState.update { it.copy(wallpaperToUnlock = null) }
+            val index = _uiState.value.wallpapers.indexOfFirst { it.id == wallpaper.id }
+            if (index != -1) {
+                openPreview(index)
             }
         }
     }
@@ -136,7 +177,7 @@ class HomeViewModel @Inject constructor(
     private fun observeRecents() {
         viewModelScope.launch {
             observeRecentsUseCase().collect { recents ->
-                _uiState.update { it.copy(recentWallpapers = markFavorites(recents)) }
+                _uiState.update { it.copy(recentWallpapers = markMetadata(recents)) }
             }
         }
     }
@@ -185,7 +226,7 @@ class HomeViewModel @Inject constructor(
                 }
                 _uiState.update {
                     it.copy(
-                        wallpapers = markFavorites(merged),
+                        wallpapers = markMetadata(merged),
                         hasNext = page.hasNext,
                         loadState = if (merged.isEmpty()) LoadState.Empty else LoadState.Idle,
                     )
@@ -203,7 +244,4 @@ class HomeViewModel @Inject constructor(
 
         requestInFlight = false
     }
-
-    private fun markFavorites(items: List<Wallpaper>): List<Wallpaper> =
-        items.map { wallpaper -> wallpaper.copy(isFavorite = wallpaper.id in favoriteIds) }
 }
