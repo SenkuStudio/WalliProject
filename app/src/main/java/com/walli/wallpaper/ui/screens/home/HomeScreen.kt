@@ -43,6 +43,22 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material.icons.rounded.Menu
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.rounded.Apps
+import androidx.compose.material.icons.rounded.Email
+import androidx.compose.material.icons.rounded.Description
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.NavigationDrawerItemDefaults
+import androidx.compose.material3.rememberDrawerState
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
@@ -62,7 +78,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.walli.wallpaper.R
 import com.walli.wallpaper.ads.AdsViewModel
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalConfiguration
 import com.walli.wallpaper.domain.model.WallpaperSort
 import com.walli.wallpaper.ui.common.LoadState
 import com.walli.wallpaper.ui.components.BannerAd
@@ -76,6 +91,7 @@ import com.walli.wallpaper.util.findActivity
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.snapshotFlow
 
 @OptIn(androidx.compose.animation.ExperimentalSharedTransitionApi::class)
@@ -89,7 +105,8 @@ fun HomeRoute(
     adsViewModel: AdsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val activity = LocalContext.current.findActivity()
+    val context = LocalContext.current
+    val activity = context.findActivity()
 
     LaunchedEffect(initialCategoryId) {
         if (initialCategoryId != null) {
@@ -109,16 +126,32 @@ fun HomeRoute(
         }
     }
 
-    HomeScreen(
-        state = state,
-        sharedTransitionScope = sharedTransitionScope,
-        animatedVisibilityScope = animatedVisibilityScope,
-        onRefresh = viewModel::refresh,
-        onLoadMore = viewModel::loadMore,
-        onSortSelected = viewModel::changeSort,
-        onCategorySelected = viewModel::selectCategory,
-        onWallpaperClick = onWallpaperClick,
-    )
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            DrawerContent(
+                onItemClick = { item: DrawerItem ->
+                    scope.launch { drawerState.close() }
+                    handleDrawerAction(context, item)
+                }
+            )
+        }
+    ) {
+        HomeScreen(
+            state = state,
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = animatedVisibilityScope,
+            onRefresh = viewModel::refresh,
+            onLoadMore = viewModel::loadMore,
+            onSortSelected = viewModel::changeSort,
+            onCategorySelected = viewModel::selectCategory,
+            onWallpaperClick = onWallpaperClick,
+            onMenuClick = { scope.launch { drawerState.open() } }
+        )
+    }
 
     state.wallpaperToUnlock?.let { wallpaper ->
         UnlockPremiumDialog(
@@ -148,6 +181,7 @@ private fun HomeScreen(
     onSortSelected: (WallpaperSort) -> Unit,
     onCategorySelected: (com.walli.wallpaper.domain.model.WallpaperCategory) -> Unit,
     onWallpaperClick: (Int) -> Unit,
+    onMenuClick: () -> Unit,
 ) {
     val gridState = rememberLazyGridState()
     val pullState = rememberPullToRefreshState()
@@ -167,7 +201,7 @@ private fun HomeScreen(
 
     Scaffold(
         topBar = {
-            HomeTopBar()
+            HomeTopBar(onMenuClick = onMenuClick)
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
@@ -367,8 +401,13 @@ private fun HomeScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HomeTopBar() {
+private fun HomeTopBar(onMenuClick: () -> Unit) {
     CenterAlignedTopAppBar(
+        navigationIcon = {
+            IconButton(onClick = onMenuClick) {
+                Icon(Icons.Rounded.Menu, contentDescription = "Menu")
+            }
+        },
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Image(
@@ -388,6 +427,105 @@ private fun HomeTopBar() {
             containerColor = MaterialTheme.colorScheme.background
         )
     )
+}
+
+private enum class DrawerItem(val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
+    HowToUse("How to use", Icons.Rounded.Info),
+    ShareApp("Share app", Icons.Rounded.Share),
+    RateUs("Rate us", Icons.Rounded.Star),
+    MoreApps("More apps", Icons.Rounded.Apps),
+    ContactUs("Contact us", Icons.Rounded.Email),
+    PrivacyPolicy("Privacy policy", Icons.Rounded.Description)
+}
+
+@Composable
+private fun DrawerContent(onItemClick: (DrawerItem) -> Unit) {
+    ModalDrawerSheet {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 32.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Image(
+                    painter = painterResource(id = R.drawable.logoapp),
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp)
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "Walli",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.ExtraBold
+                )
+            }
+        }
+
+        DrawerItem.entries.forEach { item ->
+            NavigationDrawerItem(
+                label = { Text(item.label) },
+                selected = false,
+                onClick = { onItemClick(item) },
+                icon = { Icon(item.icon, contentDescription = null) },
+                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+            )
+        }
+        
+        Spacer(modifier = Modifier.weight(1f))
+        
+        Text(
+            text = "Version 1.0.0",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(16.dp)
+        )
+    }
+}
+
+private fun handleDrawerAction(context: android.content.Context, item: DrawerItem) {
+    when (item) {
+        DrawerItem.HowToUse -> {
+            Toast.makeText(context, "Welcome to Walli! Swipe to explore and tap to preview wallpapers.", Toast.LENGTH_LONG).show()
+        }
+        DrawerItem.ShareApp -> {
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_SUBJECT, "Check out Walli App")
+                putExtra(Intent.EXTRA_TEXT, "Download Walli for amazing wallpapers: https://play.google.com/store/apps/details?id=${context.packageName}")
+            }
+            context.startActivity(Intent.createChooser(intent, "Share via"))
+        }
+        DrawerItem.RateUs -> {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=${context.packageName}")).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            try {
+                context.startActivity(intent)
+            } catch (e: Exception) {
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=${context.packageName}")))
+            }
+        }
+        DrawerItem.MoreApps -> {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/developer?id=Walli+Team"))
+            context.startActivity(intent)
+        }
+        DrawerItem.ContactUs -> {
+            val intent = Intent(Intent.ACTION_SENDTO).apply {
+                data = Uri.parse("mailto:support@walliapp.com")
+                putExtra(Intent.EXTRA_SUBJECT, "Walli App Feedback")
+            }
+            try {
+                context.startActivity(intent)
+            } catch (e: Exception) {
+                Toast.makeText(context, "No email app found", Toast.LENGTH_SHORT).show()
+            }
+        }
+        DrawerItem.PrivacyPolicy -> {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://walliapp.com/privacy-policy"))
+            context.startActivity(intent)
+        }
+    }
 }
 
 @Composable

@@ -1,5 +1,7 @@
 package com.walli.wallpaper.ui.screens.settings
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -61,6 +63,7 @@ fun SettingsScreen(
     onAutoWallpaperCategoryChange: (Int?) -> Unit,
     onClearCache: () -> Unit
 ) {
+    val context = LocalContext.current
     val scrollState = rememberScrollState()
     var showThemeDialog by remember { mutableStateOf(false) }
     var showSourceDialog by remember { mutableStateOf(false) }
@@ -163,14 +166,46 @@ fun SettingsScreen(
                 icon = Icons.Rounded.StarRate,
                 title = "Rate App",
                 subtitle = "Support us by leaving a review",
-                onClick = { /* TODO: Play Store link */ }
+                onClick = {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.walli.wallpaper"))
+                    context.startActivity(intent)
+                }
             )
 
             SettingsItem(
                 icon = Icons.Rounded.Share,
                 title = "Share App",
                 subtitle = "Spread the word with friends",
-                onClick = { /* TODO: Share intent */ }
+                onClick = {
+                    val intent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, "Check out Walli Wallpaper: https://play.google.com/store/apps/details?id=com.walli.wallpaper")
+                    }
+                    context.startActivity(Intent.createChooser(intent, "Share via"))
+                }
+            )
+
+            SettingsItem(
+                icon = Icons.Rounded.Mail,
+                title = "Contact Us",
+                subtitle = "Report bugs or suggest features",
+                onClick = {
+                    val intent = Intent(Intent.ACTION_SENDTO).apply {
+                        data = Uri.parse("mailto:skstudioapp7@gmail.com")
+                        putExtra(Intent.EXTRA_SUBJECT, "Walli App Feedback")
+                    }
+                    context.startActivity(Intent.createChooser(intent, "Send email..."))
+                }
+            )
+
+            SettingsItem(
+                icon = Icons.Rounded.Apps,
+                title = "More Apps",
+                subtitle = "Check out our other applications",
+                onClick = {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/dev?id=8066128835537801410"))
+                    context.startActivity(intent)
+                }
             )
             
             Box(
