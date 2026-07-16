@@ -1,5 +1,6 @@
 package com.walli.wallpaper.ui.screens.preview
 
+import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.walli.wallpaper.domain.model.Wallpaper
@@ -22,6 +23,12 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+data class ImageTransformation(
+    val scale: Float = 1f,
+    val offset: Offset = Offset.Zero,
+    val rotation: Float = 0f,
+)
+
 data class PreviewUiState(
     val items: List<Wallpaper> = emptyList(),
     val initialIndex: Int = 0,
@@ -30,6 +37,7 @@ data class PreviewUiState(
     val workingLabel: String? = null,
     val message: String? = null,
     val isOnline: Boolean = true,
+    val transformations: Map<Int, ImageTransformation> = emptyMap(),
 )
 
 @HiltViewModel
@@ -97,9 +105,18 @@ class PreviewViewModel @Inject constructor(
 
     fun download(index: Int) {
         val wallpaper = _uiState.value.items.getOrNull(index) ?: return
+        val transformation = _uiState.value.transformations[index] ?: ImageTransformation()
         viewModelScope.launch {
             setWorking(label = "Downloading…")
-            wallpaperDownloader.download(wallpaper.imageUrl, wallpaper.title)
+            wallpaperDownloader.download(
+                url = wallpaper.imageUrl,
+                title = wallpaper.title,
+                scale = transformation.scale,
+                offsetX = transformation.offset.x,
+                offsetY = transformation.offset.y,
+                rotation = transformation.rotation,
+                applier = wallpaperApplier
+            )
                 .onSuccess {
                     incrementDownloadUseCase(wallpaper.id)
                     setMessage("Saved to Downloads")
@@ -111,11 +128,52 @@ class PreviewViewModel @Inject constructor(
         }
     }
 
+    fun updateTransformation(index: Int, scale: Float, offset: Offset, rotation: Float) {
+        _uiState.update { current ->
+            current.copy(
+                transformations = current.transformations + (index to ImageTransformation(scale, offset, rotation))
+            )
+        }
+    }
+
+    fun resetTransformation(index: Int) {
+        _uiState.update { current ->
+            current.copy(
+                transformations = current.transformations - index
+            )
+        }
+    }
+
+    fun handleDoubleTap(index: Int, tapOffset: Offset = Offset.Zero, center: Offset = Offset.Zero) {
+        _uiState.update { current ->
+            val currentTransformation = current.transformations[index] ?: ImageTransformation()
+            val newTransformation = if (currentTransformation.scale > 1f) {
+                ImageTransformation() // Reset to 1x
+            } else {
+                val targetScale = 2.5f
+                // Zoom at tap location relative to center pivot
+                val newOffset = (tapOffset - center) * (1f - targetScale)
+                ImageTransformation(scale = targetScale, offset = newOffset)
+            }
+            current.copy(
+                transformations = current.transformations + (index to newTransformation)
+            )
+        }
+    }
+
     fun applyWallpaper(index: Int, target: WallpaperTarget) {
         val wallpaper = _uiState.value.items.getOrNull(index) ?: return
+        val transformation = _uiState.value.transformations[index] ?: ImageTransformation()
         viewModelScope.launch {
             setWorking(label = "Applying wallpaper…")
-            wallpaperApplier.apply(wallpaper.imageUrl, target)
+            wallpaperApplier.apply(
+                url = wallpaper.imageUrl,
+                target = target,
+                scale = transformation.scale,
+                offsetX = transformation.offset.x,
+                offsetY = transformation.offset.y,
+                rotation = transformation.rotation
+            )
                 .onSuccess {
                     setMessage("Wallpaper applied to ${target.label.lowercase()}")
                 }
@@ -128,9 +186,18 @@ class PreviewViewModel @Inject constructor(
 
     fun share(index: Int) {
         val wallpaper = _uiState.value.items.getOrNull(index) ?: return
+        val transformation = _uiState.value.transformations[index] ?: ImageTransformation()
         viewModelScope.launch {
             setWorking(label = "Preparing share…")
-            shareManager.share(wallpaper.imageUrl, wallpaper.title)
+            shareManager.share(
+                url = wallpaper.imageUrl,
+                title = wallpaper.title,
+                scale = transformation.scale,
+                offsetX = transformation.offset.x,
+                offsetY = transformation.offset.y,
+                rotation = transformation.rotation,
+                applier = wallpaperApplier
+            )
                 .onFailure { throwable ->
                     setMessage(throwable.message ?: "Share failed")
                 }

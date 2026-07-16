@@ -32,6 +32,8 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.ChevronLeft
+import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
@@ -56,10 +58,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -73,6 +78,12 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.palette.graphics.Palette
 import com.walli.wallpaper.util.blurhash.BlurhashDecoder
 import coil3.SingletonImageLoader
@@ -89,7 +100,18 @@ import com.walli.wallpaper.ui.components.NoInternetState
 import com.walli.wallpaper.ui.components.EmptyState
 import com.walli.wallpaper.ui.components.PremiumLoader
 import com.walli.wallpaper.util.findActivity
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import androidx.compose.ui.input.pointer.util.VelocityTracker
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculateCentroid
+import androidx.compose.foundation.gestures.calculateCentroidSize
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateRotation
+import androidx.compose.foundation.gestures.calculateZoom
 
 @OptIn(androidx.compose.animation.ExperimentalSharedTransitionApi::class)
 @Composable
@@ -104,6 +126,7 @@ fun PreviewRoute(
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     val activity = context.findActivity()
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     var showSetSheet by remember { mutableStateOf(false) }
 
     // Color Palette state
@@ -152,7 +175,9 @@ fun PreviewRoute(
             val result = loader.execute(request)
             if (result is SuccessResult) {
                 val bitmap = result.image.asDrawable(context.resources).toBitmap()
-                val palette = Palette.from(bitmap).maximumColorCount(16).generate()
+                val palette = withContext(Dispatchers.Default) {
+                    Palette.from(bitmap).maximumColorCount(16).generate()
+                }
                 val swatch = palette.vibrantSwatch ?: palette.dominantSwatch
                 swatch?.let { s ->
                     dominantColor = Color(s.rgb)
@@ -220,11 +245,17 @@ fun PreviewRoute(
                 state = pagerState,
                 beyondViewportPageCount = 1,
                 modifier = Modifier.fillMaxSize(),
+                userScrollEnabled = (state.transformations[pagerState.currentPage % state.items.size]?.scale ?: 1f) <= 1f,
                 key = { page -> state.items.getOrNull(page % state.items.size)?.id ?: page }
             ) { page ->
                 if (state.items.isEmpty()) return@HorizontalPager
                 val actualPage = page % state.items.size
                 val wallpaper = state.items[actualPage]
+
+                var isLoaded by remember(wallpaper.id) { mutableStateOf(false) }
+
+                val transformation = state.transformations[actualPage] ?: ImageTransformation()
+                val currentTransformationState = rememberUpdatedState(transformation)
 
                 val placeholder = remember(wallpaper.blurHash) {
                     wallpaper.blurHash?.let {
@@ -236,13 +267,56 @@ fun PreviewRoute(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(Color.Black)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = viewModel::toggleControls,
-                        ),
+                        .pointerInput(actualPage) {
+                            detectTapGestures(
+                                onDoubleTap = { tapOffset ->
+                                    viewModel.handleDoubleTap(
+                                        index = actualPage,
+                                        tapOffset = tapOffset,
+                                        center = Offset(size.width / 2f, size.height / 2f)
+                                    )
+                                },
+                                onTap = { viewModel.toggleControls() }
+                            )
+                        }
+                        .pointerInput(actualPage, isLoaded) {
+                            if (!isLoaded) return@pointerInput
+                            detectTransformGestures(panZoomLock = false) { centroid, pan, zoom, rotation ->
+                                val current = currentTransformationState.value
+                                val newScale = (current.scale * zoom).coerceIn(1f, 5f)
+                                
+                                val newOffset = if (newScale > 1f) {
+                                    // Calculate center-zoom offset adjustment
+                                    val pivot = centroid - Offset(size.width / 2f, size.height / 2f)
+                                    val scaleChange = newScale / current.scale
+                                    val zoomOffset = (current.offset - pivot) * scaleChange + pivot - current.offset
+                                    current.offset + pan + zoomOffset
+                                } else {
+                                    Offset.Zero
+                                }
+                                
+                                viewModel.updateTransformation(
+                                    actualPage,
+                                    newScale,
+                                    newOffset,
+                                    current.rotation + rotation
+                                )
+                            }
+                        },
                 ) {
-                    val imageModifier = Modifier.fillMaxSize()
+                    val imageModifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            val currentScale = if (isLoaded) transformation.scale else 1f
+                            val currentOffset = if (isLoaded) transformation.offset else Offset.Zero
+                            val currentRotation = if (isLoaded) transformation.rotation else 0f
+                            
+                            scaleX = currentScale
+                            scaleY = currentScale
+                            translationX = currentOffset.x
+                            translationY = currentOffset.y
+                            rotationZ = currentRotation
+                        }
                     val sharedImageModifier = if (page == state.initialIndex) {
                         with(sharedTransitionScope) {
                             imageModifier.sharedElement(
@@ -264,14 +338,15 @@ fun PreviewRoute(
                         contentDescription = wallpaper.title,
                         modifier = sharedImageModifier,
                         contentScale = ContentScale.Crop,
+                        onSuccess = { isLoaded = true },
                         loading = {
                             Box(
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center
                             ) {
-                                placeholder?.let { 
+                                placeholder?.let { bitmap ->
                                     androidx.compose.foundation.Image(
-                                        bitmap = it,
+                                        bitmap = bitmap,
                                         contentDescription = null,
                                         modifier = Modifier.fillMaxSize(),
                                         contentScale = ContentScale.Crop
@@ -280,6 +355,26 @@ fun PreviewRoute(
                                 PremiumLoader(
                                     isPremium = wallpaper.isPremium,
                                     color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        },
+                        error = {
+                            Column(
+                                modifier = Modifier.fillMaxSize(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Warning,
+                                    contentDescription = "Error",
+                                    tint = Color.White.copy(alpha = 0.5f),
+                                    modifier = Modifier.size(48.dp)
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    "Failed to load image",
+                                    color = Color.White.copy(alpha = 0.5f),
+                                    style = MaterialTheme.typography.bodyMedium
                                 )
                             }
                         }
@@ -329,6 +424,23 @@ fun PreviewRoute(
                             Icon(Icons.Rounded.ArrowBack, contentDescription = "Back")
                         }
                         Spacer(modifier = Modifier.weight(1f))
+                        
+                        // Reset Button
+                        val actualTransformation = state.transformations[actualPage]
+                        if (actualTransformation != null && (actualTransformation.scale != 1f || actualTransformation.offset != Offset.Zero || actualTransformation.rotation != 0f)) {
+                            FilledTonalButton(
+                                onClick = { viewModel.resetTransformation(actualPage) },
+                                colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
+                                    containerColor = animatedDominantColor.copy(alpha = 0.95f),
+                                    contentColor = onDominantColor
+                                ),
+                                shape = RoundedCornerShape(16.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp)
+                            ) {
+                                Text("Reset", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                            }
+                        }
+
                         Surface(
                             shape = RoundedCornerShape(16.dp),
                             color = animatedDominantColor.copy(alpha = 0.95f),
@@ -377,6 +489,63 @@ fun PreviewRoute(
                                 )
                             }
                             
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                FilledTonalButton(
+                                    onClick = {
+                                        scope.launch {
+                                            pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                                        }
+                                    },
+                                    enabled = pagerState.currentPage > 0,
+                                    colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
+                                        containerColor = Color.Transparent,
+                                        contentColor = onDominantColor,
+                                        disabledContentColor = onDominantColor.copy(alpha = 0.38f)
+                                    ),
+                                    contentPadding = PaddingValues(0.dp)
+                                ) {
+                                    Icon(Icons.Rounded.ChevronLeft, contentDescription = null)
+                                    Text("Previous", style = MaterialTheme.typography.labelLarge)
+                                }
+
+                                Surface(
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = onDominantColor.copy(alpha = 0.1f),
+                                ) {
+                                    Text(
+                                        text = "${actualPage + 1} / ${state.items.size}",
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        color = onDominantColor,
+                                    )
+                                }
+
+                                FilledTonalButton(
+                                    onClick = {
+                                        scope.launch {
+                                            pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                        }
+                                    },
+                                    enabled = pagerState.currentPage < state.items.size - 1,
+                                    colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
+                                        containerColor = Color.Transparent,
+                                        contentColor = onDominantColor,
+                                        disabledContentColor = onDominantColor.copy(alpha = 0.38f)
+                                    ),
+                                    contentPadding = PaddingValues(0.dp)
+                                ) {
+                                    Text("Next", style = MaterialTheme.typography.labelLarge)
+                                    Icon(Icons.Rounded.ChevronRight, contentDescription = null)
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
                             val screenWidth = LocalConfiguration.current.screenWidthDp
                             val showLabels = screenWidth > 360
 
