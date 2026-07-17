@@ -25,14 +25,18 @@ import javax.inject.Singleton
 class AdMobManager @Inject constructor(
     @ApplicationContext private val context: Context,
 ) : DefaultLifecycleObserver {
-    private var interstitialAd: InterstitialAd? = null
-    private var rewardedAd: RewardedAd? = null
+    private var homeInterstitialAd: InterstitialAd? = null
+    private var categoryInterstitialAd: InterstitialAd? = null
+    private var downloadInterstitialAd: InterstitialAd? = null
+
+    private var homeRewardedAd: RewardedAd? = null
+    private var categoryRewardedAd: RewardedAd? = null
+    private var previewRewardedAd: RewardedAd? = null
     
     private val _isRewardedLoaded = MutableStateFlow(false)
     val isRewardedLoaded = _isRewardedLoaded.asStateFlow()
 
     private var openCounter = 0
-    private var downloadCounter = 0
     private var isAppInForeground = false
 
     init {
@@ -49,128 +53,172 @@ class AdMobManager @Inject constructor(
 
     fun warmUp() {
         if (isAppInForeground) {
-            loadInterstitial()
-            loadRewarded()
+            loadAllAds()
         }
     }
 
-    fun maybeShowOpenInterstitial(activity: Activity?, onContinue: () -> Unit) {
+    private fun loadAllAds() {
+        loadInterstitial(BuildConfig.ADMOB_INTERSTITIAL_HOME) { homeInterstitialAd = it }
+        loadInterstitial(BuildConfig.ADMOB_INTERSTITIAL_CATEGORY) { categoryInterstitialAd = it }
+        loadInterstitial(BuildConfig.ADMOB_INTERSTITIAL_DOWNLOAD) { downloadInterstitialAd = it }
+
+        loadRewarded(BuildConfig.ADMOB_REWARDED_HOME) { homeRewardedAd = it }
+        loadRewarded(BuildConfig.ADMOB_REWARDED_CATEGORY) { categoryRewardedAd = it }
+        loadRewarded(BuildConfig.ADMOB_REWARDED_PREVIEW) { previewRewardedAd = it }
+    }
+
+    fun maybeShowHomeInterstitial(activity: Activity?, onContinue: () -> Unit) {
         openCounter += 1
-        if (openCounter % 3 != 0) {
+        if (openCounter % 2 != 0) {
             onContinue()
             return
         }
-        showInterstitial(activity = activity, onContinue = onContinue)
+        showInterstitial(activity, homeInterstitialAd, { homeInterstitialAd = null }, BuildConfig.ADMOB_INTERSTITIAL_HOME, onContinue)
+    }
+
+    fun maybeShowCategoryInterstitial(activity: Activity?, onContinue: () -> Unit) {
+        openCounter += 1
+        if (openCounter % 2 != 0) {
+            onContinue()
+            return
+        }
+        showInterstitial(activity, categoryInterstitialAd, { categoryInterstitialAd = null }, BuildConfig.ADMOB_INTERSTITIAL_CATEGORY, onContinue)
     }
 
     fun maybeShowDownloadInterstitial(activity: Activity?, onContinue: () -> Unit) {
-        downloadCounter += 1
-        if (downloadCounter % 2 != 0) {
-            onContinue()
-            return
-        }
-        showInterstitial(activity = activity, onContinue = onContinue)
+        showInterstitial(activity, downloadInterstitialAd, { downloadInterstitialAd = null }, BuildConfig.ADMOB_INTERSTITIAL_DOWNLOAD, onContinue)
     }
 
-    private fun showInterstitial(activity: Activity?, onContinue: () -> Unit) {
-        val interstitial = interstitialAd
-        if (activity == null || interstitial == null) {
+    private fun showInterstitial(
+        activity: Activity?,
+        ad: InterstitialAd?,
+        clearAd: () -> Unit,
+        adUnitId: String,
+        onContinue: () -> Unit
+    ) {
+        if (activity == null || ad == null) {
             onContinue()
-            if (isAppInForeground) loadInterstitial()
+            if (isAppInForeground) loadInterstitial(adUnitId) { 
+                if (adUnitId == BuildConfig.ADMOB_INTERSTITIAL_HOME) homeInterstitialAd = it
+                else if (adUnitId == BuildConfig.ADMOB_INTERSTITIAL_CATEGORY) categoryInterstitialAd = it
+                else if (adUnitId == BuildConfig.ADMOB_INTERSTITIAL_DOWNLOAD) downloadInterstitialAd = it
+            }
             return
         }
 
-        interstitial.fullScreenContentCallback = object : FullScreenContentCallback() {
+        ad.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdDismissedFullScreenContent() {
-                interstitialAd = null
-                if (isAppInForeground) loadInterstitial()
+                clearAd()
+                if (isAppInForeground) loadInterstitial(adUnitId) {
+                    if (adUnitId == BuildConfig.ADMOB_INTERSTITIAL_HOME) homeInterstitialAd = it
+                    else if (adUnitId == BuildConfig.ADMOB_INTERSTITIAL_CATEGORY) categoryInterstitialAd = it
+                    else if (adUnitId == BuildConfig.ADMOB_INTERSTITIAL_DOWNLOAD) downloadInterstitialAd = it
+                }
                 onContinue()
             }
 
             override fun onAdFailedToShowFullScreenContent(adError: AdError) {
-                interstitialAd = null
-                if (isAppInForeground) loadInterstitial()
+                clearAd()
+                if (isAppInForeground) loadInterstitial(adUnitId) {
+                    if (adUnitId == BuildConfig.ADMOB_INTERSTITIAL_HOME) homeInterstitialAd = it
+                    else if (adUnitId == BuildConfig.ADMOB_INTERSTITIAL_CATEGORY) categoryInterstitialAd = it
+                    else if (adUnitId == BuildConfig.ADMOB_INTERSTITIAL_DOWNLOAD) downloadInterstitialAd = it
+                }
                 onContinue()
             }
         }
-        interstitial.show(activity)
+        ad.show(activity)
     }
 
-    fun showRewarded(
+    fun showHomeRewarded(activity: Activity?, onReward: () -> Unit, onDismiss: () -> Unit = {}) {
+        showRewarded(activity, homeRewardedAd, { homeRewardedAd = null }, BuildConfig.ADMOB_REWARDED_HOME, onReward, onDismiss)
+    }
+
+    fun showCategoryRewarded(activity: Activity?, onReward: () -> Unit, onDismiss: () -> Unit = {}) {
+        showRewarded(activity, categoryRewardedAd, { categoryRewardedAd = null }, BuildConfig.ADMOB_REWARDED_CATEGORY, onReward, onDismiss)
+    }
+
+    fun showPreviewRewarded(activity: Activity?, onReward: () -> Unit, onDismiss: () -> Unit = {}) {
+        showRewarded(activity, previewRewardedAd, { previewRewardedAd = null }, BuildConfig.ADMOB_REWARDED_PREVIEW, onReward, onDismiss)
+    }
+
+    private fun showRewarded(
         activity: Activity?,
+        ad: RewardedAd?,
+        clearAd: () -> Unit,
+        adUnitId: String,
         onReward: () -> Unit,
-        onDismiss: () -> Unit = {},
+        onDismiss: () -> Unit
     ) {
-        val rewarded = rewardedAd
-        if (activity == null || rewarded == null) {
-            // Bypass if ad is not ready, as per existing logic in ViewModel
+        if (activity == null || ad == null) {
             onReward()
             onDismiss()
-            if (isAppInForeground) loadRewarded()
+            if (isAppInForeground) loadRewarded(adUnitId) {
+                if (adUnitId == BuildConfig.ADMOB_REWARDED_HOME) homeRewardedAd = it
+                else if (adUnitId == BuildConfig.ADMOB_REWARDED_CATEGORY) categoryRewardedAd = it
+                else if (adUnitId == BuildConfig.ADMOB_REWARDED_PREVIEW) previewRewardedAd = it
+            }
             return
         }
 
-        rewarded.fullScreenContentCallback = object : FullScreenContentCallback() {
+        ad.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdDismissedFullScreenContent() {
-                rewardedAd = null
+                clearAd()
                 _isRewardedLoaded.value = false
-                if (isAppInForeground) loadRewarded()
+                if (isAppInForeground) loadRewarded(adUnitId) {
+                    if (adUnitId == BuildConfig.ADMOB_REWARDED_HOME) homeRewardedAd = it
+                    else if (adUnitId == BuildConfig.ADMOB_REWARDED_CATEGORY) categoryRewardedAd = it
+                    else if (adUnitId == BuildConfig.ADMOB_REWARDED_PREVIEW) previewRewardedAd = it
+                }
                 onDismiss()
             }
 
             override fun onAdFailedToShowFullScreenContent(adError: AdError) {
-                rewardedAd = null
+                clearAd()
                 _isRewardedLoaded.value = false
-                if (isAppInForeground) loadRewarded()
-                // Bypass failure to not block user
+                if (isAppInForeground) loadRewarded(adUnitId) {
+                    if (adUnitId == BuildConfig.ADMOB_REWARDED_HOME) homeRewardedAd = it
+                    else if (adUnitId == BuildConfig.ADMOB_REWARDED_CATEGORY) categoryRewardedAd = it
+                    else if (adUnitId == BuildConfig.ADMOB_REWARDED_PREVIEW) previewRewardedAd = it
+                }
                 onReward()
                 onDismiss()
             }
         }
 
-        rewarded.show(activity, OnUserEarnedRewardListener {
+        ad.show(activity, OnUserEarnedRewardListener {
             onReward()
         })
     }
 
-    private fun loadInterstitial() {
-        if (!isAppInForeground) return
-        if (BuildConfig.ADMOB_INTERSTITIAL_ID.isBlank()) return
+    private fun loadInterstitial(adUnitId: String, onLoaded: (InterstitialAd) -> Unit) {
+        if (!isAppInForeground || adUnitId.isBlank()) return
         InterstitialAd.load(
             context,
-            BuildConfig.ADMOB_INTERSTITIAL_ID,
+            adUnitId,
             AdRequest.Builder().build(),
             object : InterstitialAdLoadCallback() {
                 override fun onAdLoaded(ad: InterstitialAd) {
-                    interstitialAd = ad
+                    onLoaded(ad)
                 }
-
-                override fun onAdFailedToLoad(loadAdError: LoadAdError) {
-                    interstitialAd = null
-                }
+                override fun onAdFailedToLoad(loadAdError: LoadAdError) {}
             },
         )
     }
 
-    private fun loadRewarded() {
-        if (!isAppInForeground) return
-        if (BuildConfig.ADMOB_REWARDED_ID.isBlank()) return
+    private fun loadRewarded(adUnitId: String, onLoaded: (RewardedAd) -> Unit) {
+        if (!isAppInForeground || adUnitId.isBlank()) return
         RewardedAd.load(
             context,
-            BuildConfig.ADMOB_REWARDED_ID,
+            adUnitId,
             AdRequest.Builder().build(),
             object : RewardedAdLoadCallback() {
                 override fun onAdLoaded(ad: RewardedAd) {
-                    rewardedAd = ad
+                    onLoaded(ad)
                     _isRewardedLoaded.value = true
                 }
-
-                override fun onAdFailedToLoad(loadAdError: LoadAdError) {
-                    rewardedAd = null
-                    _isRewardedLoaded.value = false
-                }
+                override fun onAdFailedToLoad(loadAdError: LoadAdError) {}
             }
         )
     }
 }
-

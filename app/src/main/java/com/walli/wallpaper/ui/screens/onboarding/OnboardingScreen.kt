@@ -44,8 +44,8 @@ fun OnboardingScreen(
 ) {
     val pages = listOf(
         OnboardingPage(
-            "Premium Collection",
-            "Access thousands of high-quality 4K wallpapers curated by top artists worldwide.",
+            "Divine Collection",
+            "Access thousands of high-quality 4K Krishna wallpapers curated for your spiritual journey.",
             Icons.Rounded.Collections,
             MaterialTheme.colorScheme.primary
         ),

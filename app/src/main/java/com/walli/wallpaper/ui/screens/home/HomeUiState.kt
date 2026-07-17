@@ -8,6 +8,8 @@ import com.walli.wallpaper.ui.common.LoadState
 data class HomeUiState(
     val wallpapers: List<Wallpaper> = emptyList(),
     val recentWallpapers: List<Wallpaper> = emptyList(),
+    val favoriteIds: Set<String> = emptySet(),
+    val unlockedIds: Set<String> = emptySet(),
     val categories: List<WallpaperCategory> = listOf(WallpaperCategory(id = null, name = "All")),
     val selectedCategoryId: Int? = null,
     val sort: WallpaperSort = WallpaperSort.LATEST,

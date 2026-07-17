@@ -94,6 +94,7 @@ import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import coil3.request.allowHardware
 import coil3.request.crossfade
+import com.walli.wallpaper.BuildConfig
 import com.walli.wallpaper.ads.AdsViewModel
 import com.walli.wallpaper.domain.model.WallpaperTarget
 import androidx.compose.ui.draw.blur
@@ -805,7 +806,7 @@ fun PreviewRoute(
             wallpaper = wallpaper,
             onDismiss = viewModel::dismissUnlockDialog,
             onUnlock = {
-                adsViewModel.showRewarded(
+                adsViewModel.showPreviewRewarded(
                     activity = activity,
                     onReward = {
                         viewModel.unlockWallpaper(wallpaper)

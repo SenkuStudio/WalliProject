@@ -27,9 +27,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.platform.LocalConfiguration
+import com.walli.wallpaper.BuildConfig
 import com.walli.wallpaper.ads.AdsViewModel
 import com.walli.wallpaper.domain.model.WallpaperCategory
 import com.walli.wallpaper.ui.common.LoadState
+import com.walli.wallpaper.ui.components.BannerAd
 import com.walli.wallpaper.ui.components.EmptyState
 import com.walli.wallpaper.ui.components.NoInternetState
 import com.walli.wallpaper.ui.components.WallpaperCard
@@ -66,7 +68,7 @@ fun CategoryWallpapersRoute(
         if (wallpaper != null && wallpaper.isPremium && !wallpaper.isUnlocked) {
             viewModel.onWallpaperClick(index)
         } else {
-            adsViewModel.maybeShowOpenInterstitial(activity) {
+            adsViewModel.maybeShowCategoryInterstitial(activity) {
                 viewModel.openPreview(index)
                 onOpenPreview()
             }
@@ -78,7 +80,7 @@ fun CategoryWallpapersRoute(
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = "Walli",
+                        text = "Krishna Wallpaper 4k",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.ExtraBold,
                     )
@@ -118,7 +120,7 @@ fun CategoryWallpapersRoute(
             wallpaper = wallpaper,
             onDismiss = viewModel::dismissUnlockDialog,
             onUnlock = {
-                adsViewModel.showRewarded(
+                adsViewModel.showCategoryRewarded(
                     activity = activity,
                     onReward = {
                         viewModel.unlockWallpaper(wallpaper)
@@ -187,6 +189,8 @@ private fun CategoryWallpapersScreen(
                 itemsIndexed(state.wallpapers, key = { _, item -> item.id }) { index, wallpaper ->
                     WallpaperCard(
                         wallpaper = wallpaper,
+                        isFavorite = state.favoriteIds.contains(wallpaper.id),
+                        isUnlocked = state.unlockedIds.contains(wallpaper.id),
                         onClick = { onWallpaperClick(index) },
                         sharedTransitionScope = sharedTransitionScope,
                         animatedVisibilityScope = animatedVisibilityScope
@@ -196,6 +200,15 @@ private fun CategoryWallpapersScreen(
                 if (state.loadState is LoadState.Appending) {
                     items(2) {
                         WallpaperCardShimmer()
+                    }
+                }
+
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    if (state.wallpapers.isNotEmpty()) {
+                        BannerAd(
+                            adUnitId = BuildConfig.ADMOB_BANNER_CATEGORY_WALLPAPERS,
+                            modifier = Modifier.padding(top = 16.dp)
+                        )
                     }
                 }
             }

@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -19,11 +21,32 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
 
-        buildConfigField("String", "BASE_URL", "\"http://10.204.248.23/walli-php-backend/\"")
-        buildConfigField("String", "API_KEY", "\"wapi_109ae2701211bcffa038ce05ac160cba82d440c941af9070\"")
-        buildConfigField("String", "ADMOB_BANNER_ID", "\"ca-app-pub-3940256099942544/9214589741\"")
-        buildConfigField("String", "ADMOB_INTERSTITIAL_ID", "\"ca-app-pub-3940256099942544/1033173712\"")
-        buildConfigField("String", "ADMOB_REWARDED_ID", "\"ca-app-pub-3940256099942544/5224354917\"")
+        val localProperties = Properties()
+        val localPropertiesFile = rootProject.file("local.properties")
+        if (localPropertiesFile.exists()) {
+            localProperties.load(localPropertiesFile.inputStream())
+        }
+
+        buildConfigField("String", "BASE_URL", "\"${localProperties.getProperty("BASE_URL") ?: ""}\"")
+        buildConfigField("String", "API_KEY", "\"${localProperties.getProperty("API_KEY") ?: ""}\"")
+        
+        // Banner IDs
+        buildConfigField("String", "ADMOB_BANNER_HOME_TOP", "\"${localProperties.getProperty("ADMOB_BANNER_HOME_TOP") ?: ""}\"")
+        buildConfigField("String", "ADMOB_BANNER_HOME_BOTTOM", "\"${localProperties.getProperty("ADMOB_BANNER_HOME_BOTTOM") ?: ""}\"")
+        buildConfigField("String", "ADMOB_BANNER_CATEGORIES", "\"${localProperties.getProperty("ADMOB_BANNER_CATEGORIES") ?: ""}\"")
+        buildConfigField("String", "ADMOB_BANNER_CATEGORY_WALLPAPERS", "\"${localProperties.getProperty("ADMOB_BANNER_CATEGORY_WALLPAPERS") ?: ""}\"")
+        buildConfigField("String", "ADMOB_BANNER_FAVORITES", "\"${localProperties.getProperty("ADMOB_BANNER_FAVORITES") ?: ""}\"")
+        buildConfigField("String", "ADMOB_BANNER_SETTINGS", "\"${localProperties.getProperty("ADMOB_BANNER_SETTINGS") ?: ""}\"")
+
+        // Interstitial IDs
+        buildConfigField("String", "ADMOB_INTERSTITIAL_HOME", "\"${localProperties.getProperty("ADMOB_INTERSTITIAL_HOME") ?: ""}\"")
+        buildConfigField("String", "ADMOB_INTERSTITIAL_CATEGORY", "\"${localProperties.getProperty("ADMOB_INTERSTITIAL_CATEGORY") ?: ""}\"")
+        buildConfigField("String", "ADMOB_INTERSTITIAL_DOWNLOAD", "\"${localProperties.getProperty("ADMOB_INTERSTITIAL_DOWNLOAD") ?: ""}\"")
+
+        // Rewarded IDs
+        buildConfigField("String", "ADMOB_REWARDED_HOME", "\"${localProperties.getProperty("ADMOB_REWARDED_HOME") ?: ""}\"")
+        buildConfigField("String", "ADMOB_REWARDED_CATEGORY", "\"${localProperties.getProperty("ADMOB_REWARDED_CATEGORY") ?: ""}\"")
+        buildConfigField("String", "ADMOB_REWARDED_PREVIEW", "\"${localProperties.getProperty("ADMOB_REWARDED_PREVIEW") ?: ""}\"")
     }
 
     buildTypes {

@@ -20,7 +20,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.platform.LocalConfiguration
+import com.walli.wallpaper.BuildConfig
 import com.walli.wallpaper.ui.common.LoadState
+import com.walli.wallpaper.ui.components.BannerAd
 import com.walli.wallpaper.ui.components.EmptyState
 import com.walli.wallpaper.ui.components.WallpaperCard
 import com.walli.wallpaper.ui.components.WallpaperCardShimmer
@@ -46,7 +48,7 @@ fun FavoritesRoute(
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        "Walli",
+                        "Krishna Wallpaper 4k",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.ExtraBold
                     )
@@ -96,6 +98,8 @@ fun FavoritesRoute(
                         itemsIndexed(state.items, key = { _, item -> item.id }) { index, wallpaper ->
                             WallpaperCard(
                                 wallpaper = wallpaper,
+                                isFavorite = state.favoriteIds.contains(wallpaper.id),
+                                isUnlocked = state.unlockedIds.contains(wallpaper.id),
                                 onClick = {
                                     viewModel.openPreview(index)
                                     onOpenPreview()
@@ -103,6 +107,15 @@ fun FavoritesRoute(
                                 sharedTransitionScope = sharedTransitionScope,
                                 animatedVisibilityScope = animatedVisibilityScope
                             )
+                        }
+
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            if (state.items.isNotEmpty()) {
+                                BannerAd(
+                                    adUnitId = BuildConfig.ADMOB_BANNER_FAVORITES,
+                                    modifier = Modifier.padding(top = 16.dp)
+                                )
+                            }
                         }
                     }
                 }

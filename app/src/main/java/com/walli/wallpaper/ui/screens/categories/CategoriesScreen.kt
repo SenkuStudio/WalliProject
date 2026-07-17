@@ -36,8 +36,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.SubcomposeAsyncImage
+import com.walli.wallpaper.BuildConfig
 import com.walli.wallpaper.domain.model.WallpaperCategory
 import com.walli.wallpaper.ui.common.LoadState
+import com.walli.wallpaper.ui.components.BannerAd
 import com.walli.wallpaper.ui.components.EmptyState
 import com.walli.wallpaper.ui.components.NoInternetState
 import com.walli.wallpaper.ui.components.rememberShimmerBrush
@@ -57,7 +59,7 @@ fun CategoriesRoute(
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = "Walli",
+                        text = "Krishna Wallpaper 4k",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.ExtraBold,
                     )
@@ -113,6 +115,15 @@ fun CategoriesRoute(
                             coverUrl = category.coverUrl ?: fallbackCover,
                             onClick = { onCategoryClick(category) }
                         )
+                    }
+
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        if (state.categories.isNotEmpty()) {
+                            BannerAd(
+                                adUnitId = BuildConfig.ADMOB_BANNER_CATEGORIES,
+                                modifier = Modifier.padding(top = 16.dp)
+                            )
+                        }
                     }
                 }
             }

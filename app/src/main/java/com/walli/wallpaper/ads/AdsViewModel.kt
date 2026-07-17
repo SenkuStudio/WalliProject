@@ -30,19 +30,39 @@ class AdsViewModel @Inject constructor(
         }
     }
 
-    fun maybeShowOpenInterstitial(activity: Activity?, onContinue: () -> Unit) {
-        adMobManager.maybeShowOpenInterstitial(activity, onContinue)
+    fun maybeShowHomeInterstitial(activity: Activity?, onContinue: () -> Unit) {
+        adMobManager.maybeShowHomeInterstitial(activity, onContinue)
+    }
+
+    fun maybeShowCategoryInterstitial(activity: Activity?, onContinue: () -> Unit) {
+        adMobManager.maybeShowCategoryInterstitial(activity, onContinue)
     }
 
     fun maybeShowDownloadInterstitial(activity: Activity?, onContinue: () -> Unit) {
         adMobManager.maybeShowDownloadInterstitial(activity, onContinue)
     }
 
-    fun showRewarded(
+    fun showHomeRewarded(
         activity: Activity?,
         onReward: () -> Unit,
         onDismiss: () -> Unit = {},
     ) {
-        adMobManager.showRewarded(activity, onReward, onDismiss)
+        adMobManager.showHomeRewarded(activity, onReward, onDismiss)
+    }
+
+    fun showCategoryRewarded(
+        activity: Activity?,
+        onReward: () -> Unit,
+        onDismiss: () -> Unit = {},
+    ) {
+        adMobManager.showCategoryRewarded(activity, onReward, onDismiss)
+    }
+
+    fun showPreviewRewarded(
+        activity: Activity?,
+        onReward: () -> Unit,
+        onDismiss: () -> Unit = {},
+    ) {
+        adMobManager.showPreviewRewarded(activity, onReward, onDismiss)
     }
 }

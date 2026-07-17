@@ -50,8 +50,6 @@ class HomeViewModel @Inject constructor(
     private val pageSize = 30
     private var currentPage = 0
     private var requestInFlight = false
-    private var favoriteIds = emptySet<String>()
-    private var unlockedIds = emptySet<String>()
 
     init {
         observeNetwork()
@@ -79,7 +77,7 @@ class HomeViewModel @Inject constructor(
             observeLatestCachedWallpapersUseCase(pageSize).collect { cached ->
                 val state = _uiState.value
                 if (state.wallpapers.isEmpty() && state.selectedCategoryId == null && state.sort == WallpaperSort.LATEST) {
-                    _uiState.update { it.copy(wallpapers = markMetadata(cached)) }
+                    _uiState.update { it.copy(wallpapers = cached) }
                 }
             }
         }
@@ -130,29 +128,23 @@ class HomeViewModel @Inject constructor(
                 observeFavoriteIdsUseCase(),
                 wallpaperPreferences.unlockedWallpaperIds
             ) { favorites, unlocks ->
-                favoriteIds = favorites
-                unlockedIds = unlocks
                 _uiState.update { state ->
                     state.copy(
-                        wallpapers = markMetadata(state.wallpapers),
-                        recentWallpapers = markMetadata(state.recentWallpapers),
+                        favoriteIds = favorites,
+                        unlockedIds = unlocks
                     )
                 }
             }.collect {}
         }
     }
 
-    private fun markMetadata(items: List<Wallpaper>): List<Wallpaper> =
-        items.map { wallpaper ->
-            wallpaper.copy(
-                isFavorite = wallpaper.id in favoriteIds,
-                isUnlocked = wallpaper.id in unlockedIds
-            )
-        }
+    // Remove markMetadata as we now handle this in the UI/Composables
+    // private fun markMetadata(items: List<Wallpaper>): List<Wallpaper> = ...
 
     fun onWallpaperClick(index: Int) {
         val wallpaper = _uiState.value.wallpapers.getOrNull(index) ?: return
-        if (wallpaper.isPremium && !wallpaper.isUnlocked) {
+        val isUnlocked = wallpaper.id in _uiState.value.unlockedIds
+        if (wallpaper.isPremium && !isUnlocked) {
             _uiState.update { it.copy(wallpaperToUnlock = wallpaper) }
         } else {
             openPreview(index)
@@ -177,7 +169,7 @@ class HomeViewModel @Inject constructor(
     private fun observeRecents() {
         viewModelScope.launch {
             observeRecentsUseCase().collect { recents ->
-                _uiState.update { it.copy(recentWallpapers = markMetadata(recents)) }
+                _uiState.update { it.copy(recentWallpapers = recents) }
             }
         }
     }
@@ -226,7 +218,7 @@ class HomeViewModel @Inject constructor(
                 }
                 _uiState.update {
                     it.copy(
-                        wallpapers = markMetadata(merged),
+                        wallpapers = merged,
                         hasNext = page.hasNext,
                         loadState = if (merged.isEmpty()) LoadState.Empty else LoadState.Idle,
                     )

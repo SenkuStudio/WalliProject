@@ -60,6 +60,8 @@ import com.walli.wallpaper.util.blurhash.BlurhashDecoder
 @Composable
 fun WallpaperCard(
     wallpaper: Wallpaper,
+    isFavorite: Boolean,
+    isUnlocked: Boolean,
     modifier: Modifier = Modifier,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
@@ -125,7 +127,10 @@ fun WallpaperCard(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(wallpaper.thumbnailUrl)
                         .crossfade(true)
-                        .size(320, 480) // Standardized grid size
+                        .crossfade(400)
+                        .size(Size.ORIGINAL)
+                        .diskCachePolicy(coil3.request.CachePolicy.ENABLED)
+                        .memoryCachePolicy(coil3.request.CachePolicy.ENABLED)
                         .precision(coil3.size.Precision.INEXACT)
                         .build(),
                     contentDescription = wallpaper.title,
@@ -213,14 +218,14 @@ fun WallpaperCard(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Icon(
-                                imageVector = if (wallpaper.isUnlocked) Icons.Rounded.Star else Icons.Rounded.Lock,
+                                imageVector = if (isUnlocked) Icons.Rounded.Star else Icons.Rounded.Lock,
                                 contentDescription = null,
                                 modifier = Modifier.size(12.dp),
                                 tint = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                             Spacer(modifier = Modifier.size(4.dp))
                             Text(
-                                text = if (wallpaper.isUnlocked) "Premium" else "Unlock",
+                                text = if (isUnlocked) "Premium" else "Unlock",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -228,7 +233,7 @@ fun WallpaperCard(
                         }
                     }
                 }
-                if (wallpaper.isFavorite) {
+                if (isFavorite) {
                     Surface(
                         shape = RoundedCornerShape(12.dp),
                         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),

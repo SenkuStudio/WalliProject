@@ -93,6 +93,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.snapshotFlow
+import com.walli.wallpaper.BuildConfig
 
 @OptIn(androidx.compose.animation.ExperimentalSharedTransitionApi::class)
 @Composable
@@ -119,7 +120,7 @@ fun HomeRoute(
         if (wallpaper != null && wallpaper.isPremium && !wallpaper.isUnlocked) {
             viewModel.onWallpaperClick(index)
         } else {
-            adsViewModel.maybeShowOpenInterstitial(activity) {
+            adsViewModel.maybeShowHomeInterstitial(activity) {
                 viewModel.openPreview(index)
                 onOpenPreview()
             }
@@ -158,7 +159,7 @@ fun HomeRoute(
             wallpaper = wallpaper,
             onDismiss = viewModel::dismissUnlockDialog,
             onUnlock = {
-                adsViewModel.showRewarded(
+                adsViewModel.showHomeRewarded(
                     activity = activity,
                     onReward = {
                         viewModel.unlockWallpaper(wallpaper)
@@ -244,8 +245,11 @@ private fun HomeScreen(
                         ) {
                             if (state.wallpapers.isNotEmpty()) {
                                 item(span = { GridItemSpan(maxLineSpan) }) {
+                                    val firstWallpaper = state.wallpapers.first()
                                     FeaturedHeroCard(
-                                        wallpaper = state.wallpapers.first(),
+                                        wallpaper = firstWallpaper,
+                                        isFavorite = state.favoriteIds.contains(firstWallpaper.id),
+                                        isUnlocked = state.unlockedIds.contains(firstWallpaper.id),
                                         onClick = { onWallpaperClick(0) },
                                         sharedTransitionScope = sharedTransitionScope,
                                         animatedVisibilityScope = animatedVisibilityScope
@@ -273,6 +277,8 @@ private fun HomeScreen(
                                                 Box(modifier = Modifier.width(140.dp)) {
                                                     WallpaperCard(
                                                         wallpaper = wallpaper,
+                                                        isFavorite = state.favoriteIds.contains(wallpaper.id),
+                                                        isUnlocked = state.unlockedIds.contains(wallpaper.id),
                                                         onClick = {
                                                             val index =
                                                                 state.wallpapers.indexOfFirst { it.id == wallpaper.id }
@@ -284,6 +290,15 @@ private fun HomeScreen(
                                                 }
                                             }
                                         }
+                                    }
+                                }
+
+                                item(span = { GridItemSpan(maxLineSpan) }) {
+                                    if (state.recentWallpapers.isNotEmpty()) {
+                                        BannerAd(
+                                            adUnitId = BuildConfig.ADMOB_BANNER_HOME_TOP,
+                                            modifier = Modifier.padding(top = 8.dp, bottom = 16.dp)
+                                        )
                                     }
                                 }
                             }
@@ -369,6 +384,8 @@ private fun HomeScreen(
                                     ) { index, wallpaper ->
                                         WallpaperCard(
                                             wallpaper = wallpaper,
+                                            isFavorite = state.favoriteIds.contains(wallpaper.id),
+                                            isUnlocked = state.unlockedIds.contains(wallpaper.id),
                                             onClick = { onWallpaperClick(index) },
                                             sharedTransitionScope = sharedTransitionScope,
                                             animatedVisibilityScope = animatedVisibilityScope
@@ -386,7 +403,10 @@ private fun HomeScreen(
 
                             item(span = { GridItemSpan(maxLineSpan) }) {
                                 if (state.loadState is LoadState.Appending || state.wallpapers.isNotEmpty()) {
-                                    BannerAd(modifier = Modifier.padding(top = 16.dp))
+                                    BannerAd(
+                                        adUnitId = BuildConfig.ADMOB_BANNER_HOME_BOTTOM,
+                                        modifier = Modifier.padding(top = 16.dp)
+                                    )
                                 }
                             }
                         }
@@ -417,7 +437,7 @@ private fun HomeTopBar(onMenuClick: () -> Unit) {
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Walli",
+                    text = "Krishna Wallpaper 4k",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.ExtraBold,
                 )
@@ -455,7 +475,7 @@ private fun DrawerContent(onItemClick: (DrawerItem) -> Unit) {
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = "Walli",
+                    text = "Krishna Wallpaper 4k",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.ExtraBold
                 )
@@ -486,13 +506,13 @@ private fun DrawerContent(onItemClick: (DrawerItem) -> Unit) {
 private fun handleDrawerAction(context: android.content.Context, item: DrawerItem) {
     when (item) {
         DrawerItem.HowToUse -> {
-            Toast.makeText(context, "Welcome to Walli! Swipe to explore and tap to preview wallpapers.", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "Welcome to Krishna Wallpaper 4k! Swipe to explore and tap to preview wallpapers.", Toast.LENGTH_LONG).show()
         }
         DrawerItem.ShareApp -> {
             val intent = Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"
-                putExtra(Intent.EXTRA_SUBJECT, "Check out Walli App")
-                putExtra(Intent.EXTRA_TEXT, "Download Walli for amazing wallpapers: https://play.google.com/store/apps/details?id=${context.packageName}")
+                putExtra(Intent.EXTRA_SUBJECT, "Check out Krishna Wallpaper 4k App")
+                putExtra(Intent.EXTRA_TEXT, "Download Krishna Wallpaper 4k for amazing wallpapers: https://play.google.com/store/apps/details?id=${context.packageName}")
             }
             context.startActivity(Intent.createChooser(intent, "Share via"))
         }
@@ -507,13 +527,13 @@ private fun handleDrawerAction(context: android.content.Context, item: DrawerIte
             }
         }
         DrawerItem.MoreApps -> {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/developer?id=Walli+Team"))
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/dev?id=8066128835537801410"))
             context.startActivity(intent)
         }
         DrawerItem.ContactUs -> {
             val intent = Intent(Intent.ACTION_SENDTO).apply {
-                data = Uri.parse("mailto:support@walliapp.com")
-                putExtra(Intent.EXTRA_SUBJECT, "Walli App Feedback")
+                data = Uri.parse("mailto:skstudioapp7@gmail.com")
+                putExtra(Intent.EXTRA_SUBJECT, "Krishna Wallpaper 4k Feedback")
             }
             try {
                 context.startActivity(intent)

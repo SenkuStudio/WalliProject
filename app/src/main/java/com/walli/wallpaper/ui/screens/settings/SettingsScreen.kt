@@ -28,9 +28,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.SingletonImageLoader
+import com.walli.wallpaper.BuildConfig
 import com.walli.wallpaper.R
 import com.walli.wallpaper.data.settings.AppTheme
 import com.walli.wallpaper.data.settings.AutoWallpaperSource
+import com.walli.wallpaper.ui.components.BannerAd
 import kotlinx.coroutines.launch
 
 @Composable
@@ -74,7 +76,7 @@ fun SettingsScreen(
             CenterAlignedTopAppBar(
                 title = { 
                     Text(
-                        "Walli",
+                        "Krishna Wallpaper 4k",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.ExtraBold
                     ) 
@@ -179,7 +181,7 @@ fun SettingsScreen(
                 onClick = {
                     val intent = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
-                        putExtra(Intent.EXTRA_TEXT, "Check out Walli Wallpaper: https://play.google.com/store/apps/details?id=com.walli.wallpaper")
+                        putExtra(Intent.EXTRA_TEXT, "Check out Krishna Wallpaper 4k: https://play.google.com/store/apps/details?id=com.walli.wallpaper")
                     }
                     context.startActivity(Intent.createChooser(intent, "Share via"))
                 }
@@ -192,7 +194,7 @@ fun SettingsScreen(
                 onClick = {
                     val intent = Intent(Intent.ACTION_SENDTO).apply {
                         data = Uri.parse("mailto:skstudioapp7@gmail.com")
-                        putExtra(Intent.EXTRA_SUBJECT, "Walli App Feedback")
+                        putExtra(Intent.EXTRA_SUBJECT, "Krishna Wallpaper 4k Feedback")
                     }
                     context.startActivity(Intent.createChooser(intent, "Send email..."))
                 }
@@ -206,6 +208,11 @@ fun SettingsScreen(
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/dev?id=8066128835537801410"))
                     context.startActivity(intent)
                 }
+            )
+
+            BannerAd(
+                adUnitId = BuildConfig.ADMOB_BANNER_SETTINGS,
+                modifier = Modifier.padding(top = 16.dp)
             )
             
             Box(
@@ -232,7 +239,7 @@ fun SettingsScreen(
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        "Walli Wallpaper",
+                        "Krishna Wallpaper 4k",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.ExtraBold
                     )
