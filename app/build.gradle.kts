@@ -47,6 +47,9 @@ android {
         buildConfigField("String", "ADMOB_REWARDED_HOME", "\"${localProperties.getProperty("ADMOB_REWARDED_HOME") ?: ""}\"")
         buildConfigField("String", "ADMOB_REWARDED_CATEGORY", "\"${localProperties.getProperty("ADMOB_REWARDED_CATEGORY") ?: ""}\"")
         buildConfigField("String", "ADMOB_REWARDED_PREVIEW", "\"${localProperties.getProperty("ADMOB_REWARDED_PREVIEW") ?: ""}\"")
+
+        // Native IDs
+        buildConfigField("String", "ADMOB_NATIVE_HOME", "\"${localProperties.getProperty("ADMOB_NATIVE_HOME") ?: ""}\"")
     }
 
     buildTypes {

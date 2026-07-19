@@ -414,7 +414,7 @@ private fun HomeScreen(
                                                 contentType = "native_ad"
                                             ) {
                                                 NativeAdItem(
-                                                    adUnitId = "ca-app-pub-3940256099942544/2247696110", // Test ID
+                                                    adUnitId = BuildConfig.ADMOB_NATIVE_HOME,
                                                     modifier = Modifier.padding(vertical = 8.dp)
                                                 )
                                             }
