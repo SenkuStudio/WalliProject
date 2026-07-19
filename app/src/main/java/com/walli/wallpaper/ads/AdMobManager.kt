@@ -130,16 +130,16 @@ class AdMobManager @Inject constructor(
         ad.show(activity)
     }
 
-    fun showHomeRewarded(activity: Activity?, onReward: () -> Unit, onDismiss: () -> Unit = {}) {
-        showRewarded(activity, homeRewardedAd, { homeRewardedAd = null }, BuildConfig.ADMOB_REWARDED_HOME, onReward, onDismiss)
+    fun showHomeRewarded(activity: Activity?, onReward: () -> Unit, onDismiss: () -> Unit = {}, onError: (String) -> Unit = {}) {
+        showRewarded(activity, homeRewardedAd, { homeRewardedAd = null }, BuildConfig.ADMOB_REWARDED_HOME, onReward, onDismiss, onError)
     }
 
-    fun showCategoryRewarded(activity: Activity?, onReward: () -> Unit, onDismiss: () -> Unit = {}) {
-        showRewarded(activity, categoryRewardedAd, { categoryRewardedAd = null }, BuildConfig.ADMOB_REWARDED_CATEGORY, onReward, onDismiss)
+    fun showCategoryRewarded(activity: Activity?, onReward: () -> Unit, onDismiss: () -> Unit = {}, onError: (String) -> Unit = {}) {
+        showRewarded(activity, categoryRewardedAd, { categoryRewardedAd = null }, BuildConfig.ADMOB_REWARDED_CATEGORY, onReward, onDismiss, onError)
     }
 
-    fun showPreviewRewarded(activity: Activity?, onReward: () -> Unit, onDismiss: () -> Unit = {}) {
-        showRewarded(activity, previewRewardedAd, { previewRewardedAd = null }, BuildConfig.ADMOB_REWARDED_PREVIEW, onReward, onDismiss)
+    fun showPreviewRewarded(activity: Activity?, onReward: () -> Unit, onDismiss: () -> Unit = {}, onError: (String) -> Unit = {}) {
+        showRewarded(activity, previewRewardedAd, { previewRewardedAd = null }, BuildConfig.ADMOB_REWARDED_PREVIEW, onReward, onDismiss, onError)
     }
 
     private fun showRewarded(
@@ -148,11 +148,16 @@ class AdMobManager @Inject constructor(
         clearAd: () -> Unit,
         adUnitId: String,
         onReward: () -> Unit,
-        onDismiss: () -> Unit
+        onDismiss: () -> Unit,
+        onError: (String) -> Unit
     ) {
-        if (activity == null || ad == null) {
-            onReward()
+        if (activity == null) {
             onDismiss()
+            return
+        }
+
+        if (ad == null) {
+            onError("Ad is not ready yet. Please check your internet connection and try again.")
             if (isAppInForeground) loadRewarded(adUnitId) {
                 if (adUnitId == BuildConfig.ADMOB_REWARDED_HOME) homeRewardedAd = it
                 else if (adUnitId == BuildConfig.ADMOB_REWARDED_CATEGORY) categoryRewardedAd = it
@@ -181,7 +186,7 @@ class AdMobManager @Inject constructor(
                     else if (adUnitId == BuildConfig.ADMOB_REWARDED_CATEGORY) categoryRewardedAd = it
                     else if (adUnitId == BuildConfig.ADMOB_REWARDED_PREVIEW) previewRewardedAd = it
                 }
-                onReward()
+                onError("Failed to show ad. Please check your internet connection.")
                 onDismiss()
             }
         }

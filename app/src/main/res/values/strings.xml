@@ -2,4 +2,5 @@
     <string name="app_name">Krishna Wallpaper 4k</string>
     <string name="admob_app_id">ca-app-pub-6979979912689100~9590422276</string>
     <string name="share_wallpaper">Share wallpaper</string>
+    <string name="ad_icon_desc">Ad Icon</string>
 </resources>

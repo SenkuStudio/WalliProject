@@ -47,4 +47,10 @@ class NetworkMonitor @Inject constructor(
         }
     }
         .distinctUntilChanged()
+
+    fun isCurrentlyOnline(): Boolean {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val capabilities = connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
+        return capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+    }
 }

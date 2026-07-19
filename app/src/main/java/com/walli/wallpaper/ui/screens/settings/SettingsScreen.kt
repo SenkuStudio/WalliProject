@@ -49,6 +49,7 @@ fun SettingsRoute(
         onAutoWallpaperChange = viewModel::setAutoWallpaper,
         onAutoWallpaperSourceChange = viewModel::setAutoWallpaperSource,
         onAutoWallpaperCategoryChange = viewModel::setAutoWallpaperCategory,
+        onAutoWallpaperIntervalChange = viewModel::setAutoWallpaperInterval,
         onClearCache = viewModel::clearCache
     )
 }
@@ -63,6 +64,7 @@ fun SettingsScreen(
     onAutoWallpaperChange: (Boolean) -> Unit,
     onAutoWallpaperSourceChange: (AutoWallpaperSource) -> Unit,
     onAutoWallpaperCategoryChange: (Int?) -> Unit,
+    onAutoWallpaperIntervalChange: (Int) -> Unit,
     onClearCache: () -> Unit
 ) {
     val context = LocalContext.current
@@ -70,6 +72,8 @@ fun SettingsScreen(
     var showThemeDialog by remember { mutableStateOf(false) }
     var showSourceDialog by remember { mutableStateOf(false) }
     var showCategoryDialog by remember { mutableStateOf(false) }
+    var showIntervalDialog by remember { mutableStateOf(false) }
+    var showClearCacheDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -132,6 +136,13 @@ fun SettingsScreen(
 
             if (state.autoWallpaper) {
                 SettingsItem(
+                    icon = Icons.Rounded.Timer,
+                    title = "Refresh Interval",
+                    subtitle = "Every ${state.autoWallpaperInterval} hours",
+                    onClick = { showIntervalDialog = true }
+                )
+
+                SettingsItem(
                     icon = Icons.Rounded.Source,
                     title = "Wallpaper Source",
                     subtitle = when (state.autoWallpaperSource) {
@@ -159,7 +170,7 @@ fun SettingsScreen(
                 icon = Icons.Rounded.DeleteSweep,
                 title = "Clear Cache",
                 subtitle = "Used: ${state.cacheSize} • Tap to free up storage",
-                onClick = onClearCache
+                onClick = { showClearCacheDialog = true }
             )
 
             SettingsSectionTitle("Support & About")
@@ -359,6 +370,63 @@ fun SettingsScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showCategoryDialog = false }) { Text("Cancel") }
+            },
+            shape = RoundedCornerShape(28.dp)
+        )
+    }
+
+    if (showIntervalDialog) {
+        AlertDialog(
+            onDismissRequest = { showIntervalDialog = false },
+            title = { Text("Refresh Interval") },
+            text = {
+                Column {
+                    listOf(1, 4, 12, 24).forEach { hours ->
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable {
+                                    onAutoWallpaperIntervalChange(hours)
+                                    showIntervalDialog = false
+                                }
+                                .padding(vertical = 12.dp, horizontal = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(selected = state.autoWallpaperInterval == hours, onClick = null)
+                            Spacer(Modifier.width(12.dp))
+                            Text(
+                                text = "Every $hours hours",
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showIntervalDialog = false }) { Text("Cancel") }
+            },
+            shape = RoundedCornerShape(28.dp)
+        )
+    }
+
+    if (showClearCacheDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearCacheDialog = false },
+            title = { Text("Clear Cache") },
+            text = { Text("This will remove all cached thumbnails and high-res wallpapers. High-res images will need to be re-downloaded.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onClearCache()
+                        showClearCacheDialog = false
+                    }
+                ) {
+                    Text("Clear", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearCacheDialog = false }) { Text("Cancel") }
             },
             shape = RoundedCornerShape(28.dp)
         )

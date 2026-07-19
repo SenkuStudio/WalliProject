@@ -125,6 +125,9 @@ fun CategoryWallpapersRoute(
                     onReward = {
                         viewModel.unlockWallpaper(wallpaper)
                         onOpenPreview()
+                    },
+                    onError = { message ->
+                        android.widget.Toast.makeText(activity, message, android.widget.Toast.LENGTH_LONG).show()
                     }
                 )
             }

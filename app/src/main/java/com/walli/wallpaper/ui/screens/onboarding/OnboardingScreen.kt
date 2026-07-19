@@ -45,7 +45,7 @@ fun OnboardingScreen(
     val pages = listOf(
         OnboardingPage(
             "Divine Collection",
-            "Access thousands of high-quality 4K Krishna wallpapers curated for your spiritual journey.",
+            "Access thousands of 4K Krishna wallpapers. Watch a short ad to unlock premium divine content.",
             Icons.Rounded.Collections,
             MaterialTheme.colorScheme.primary
         ),

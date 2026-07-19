@@ -81,6 +81,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import com.walli.wallpaper.domain.model.WallpaperSort
 import com.walli.wallpaper.ui.common.LoadState
 import com.walli.wallpaper.ui.components.BannerAd
+import com.walli.wallpaper.ui.components.NativeAdItem
 import com.walli.wallpaper.ui.components.EmptyState
 import com.walli.wallpaper.ui.components.FeaturedHeroCard
 import com.walli.wallpaper.ui.components.NoInternetState
@@ -117,12 +118,22 @@ fun HomeRoute(
 
     val onWallpaperClick: (Int) -> Unit = { index ->
         val wallpaper = state.wallpapers.getOrNull(index)
-        if (wallpaper != null && wallpaper.isPremium && !wallpaper.isUnlocked) {
-            viewModel.onWallpaperClick(index)
-        } else {
-            adsViewModel.maybeShowHomeInterstitial(activity) {
-                viewModel.openPreview(index)
-                onOpenPreview()
+        if (wallpaper != null) {
+            val connectivityManager = context.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+            val capabilities = connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
+            val isOnline = capabilities?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+
+            if (!isOnline && wallpaper.isPremium && !wallpaper.isUnlocked) {
+                android.widget.Toast.makeText(context, "Internet required to unlock premium content", android.widget.Toast.LENGTH_SHORT).show()
+            } else {
+                if (wallpaper.isPremium && !wallpaper.isUnlocked) {
+                    viewModel.onWallpaperClick(index)
+                } else {
+                    adsViewModel.maybeShowHomeInterstitial(activity) {
+                        viewModel.openPreview(index)
+                        onOpenPreview()
+                    }
+                }
             }
         }
     }
@@ -164,6 +175,9 @@ fun HomeRoute(
                     onReward = {
                         viewModel.unlockWallpaper(wallpaper)
                         onOpenPreview()
+                    },
+                    onError = { message ->
+                        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
                     }
                 )
             }
@@ -377,19 +391,34 @@ private fun HomeScreen(
                                 }
 
                                 else -> {
-                                    itemsIndexed(
-                                        state.wallpapers,
-                                        key = { _, item -> item.id },
-                                        contentType = { _, _ -> "wallpaper" }
-                                    ) { index, wallpaper ->
-                                        WallpaperCard(
-                                            wallpaper = wallpaper,
-                                            isFavorite = state.favoriteIds.contains(wallpaper.id),
-                                            isUnlocked = state.unlockedIds.contains(wallpaper.id),
-                                            onClick = { onWallpaperClick(index) },
-                                            sharedTransitionScope = sharedTransitionScope,
-                                            animatedVisibilityScope = animatedVisibilityScope
-                                        )
+                                    state.wallpapers.forEachIndexed { index, wallpaper ->
+                                        item(
+                                            key = wallpaper.id,
+                                            contentType = "wallpaper"
+                                        ) {
+                                            WallpaperCard(
+                                                wallpaper = wallpaper,
+                                                isFavorite = state.favoriteIds.contains(wallpaper.id),
+                                                isUnlocked = state.unlockedIds.contains(wallpaper.id),
+                                                onClick = { onWallpaperClick(index) },
+                                                sharedTransitionScope = sharedTransitionScope,
+                                                animatedVisibilityScope = animatedVisibilityScope
+                                            )
+                                        }
+
+                                        // Insert Native Ad every 10 items
+                                        if (index > 0 && (index + 1) % 10 == 0) {
+                                            item(
+                                                key = "native-ad-${index}",
+                                                span = { GridItemSpan(maxLineSpan) },
+                                                contentType = "native_ad"
+                                            ) {
+                                                NativeAdItem(
+                                                    adUnitId = "ca-app-pub-3940256099942544/2247696110", // Test ID
+                                                    modifier = Modifier.padding(vertical = 8.dp)
+                                                )
+                                            }
+                                        }
                                     }
 
                                     // Add shimmers at the bottom when loading more (Appending)

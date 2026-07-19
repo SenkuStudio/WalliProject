@@ -29,6 +29,7 @@ class SettingsManager @Inject constructor(
     private val autoWallpaperKey = booleanPreferencesKey("auto_wallpaper")
     private val autoWallpaperSourceKey = stringPreferencesKey("auto_wallpaper_source")
     private val autoWallpaperCategoryIdKey = intPreferencesKey("auto_wallpaper_category_id")
+    private val autoWallpaperIntervalKey = intPreferencesKey("auto_wallpaper_interval")
     private val onboardingCompletedKey = booleanPreferencesKey("onboarding_completed")
 
     val theme: Flow<AppTheme> = context.dataStore.data.map { preferences ->
@@ -59,6 +60,10 @@ class SettingsManager @Inject constructor(
 
     val autoWallpaperCategoryId: Flow<Int?> = context.dataStore.data.map { preferences ->
         preferences[autoWallpaperCategoryIdKey]
+    }
+
+    val autoWallpaperInterval: Flow<Int> = context.dataStore.data.map { preferences ->
+        preferences[autoWallpaperIntervalKey] ?: 4 // Default to 4 hours
     }
 
     val onboardingCompleted: Flow<Boolean> = context.dataStore.data.map { preferences ->
@@ -96,6 +101,12 @@ class SettingsManager @Inject constructor(
             } else {
                 preferences[autoWallpaperCategoryIdKey] = categoryId
             }
+        }
+    }
+
+    suspend fun setAutoWallpaperInterval(hours: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[autoWallpaperIntervalKey] = hours
         }
     }
 

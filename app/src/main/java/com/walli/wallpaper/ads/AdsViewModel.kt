@@ -46,23 +46,26 @@ class AdsViewModel @Inject constructor(
         activity: Activity?,
         onReward: () -> Unit,
         onDismiss: () -> Unit = {},
+        onError: (String) -> Unit = {}
     ) {
-        adMobManager.showHomeRewarded(activity, onReward, onDismiss)
+        adMobManager.showHomeRewarded(activity, onReward, onDismiss, onError)
     }
 
     fun showCategoryRewarded(
         activity: Activity?,
         onReward: () -> Unit,
         onDismiss: () -> Unit = {},
+        onError: (String) -> Unit = {}
     ) {
-        adMobManager.showCategoryRewarded(activity, onReward, onDismiss)
+        adMobManager.showCategoryRewarded(activity, onReward, onDismiss, onError)
     }
 
     fun showPreviewRewarded(
         activity: Activity?,
         onReward: () -> Unit,
         onDismiss: () -> Unit = {},
+        onError: (String) -> Unit = {}
     ) {
-        adMobManager.showPreviewRewarded(activity, onReward, onDismiss)
+        adMobManager.showPreviewRewarded(activity, onReward, onDismiss, onError)
     }
 }

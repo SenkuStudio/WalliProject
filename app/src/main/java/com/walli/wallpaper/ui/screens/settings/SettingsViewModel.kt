@@ -27,6 +27,7 @@ data class SettingsUiState(
     val autoWallpaper: Boolean = false,
     val autoWallpaperSource: AutoWallpaperSource = AutoWallpaperSource.RANDOM,
     val autoWallpaperCategoryId: Int? = null,
+    val autoWallpaperInterval: Int = 4,
     val categories: List<WallpaperCategory> = emptyList(),
     val cacheSize: String = "0 MB"
 )
@@ -56,6 +57,7 @@ class SettingsViewModel @Inject constructor(
         settingsManager.autoWallpaper,
         settingsManager.autoWallpaperSource,
         settingsManager.autoWallpaperCategoryId,
+        settingsManager.autoWallpaperInterval,
         _categories,
         _cacheSize
     ) { args ->
@@ -65,8 +67,9 @@ class SettingsViewModel @Inject constructor(
             autoWallpaper = args[2] as Boolean,
             autoWallpaperSource = args[3] as AutoWallpaperSource,
             autoWallpaperCategoryId = args[4] as Int?,
-            categories = args[5] as List<WallpaperCategory>,
-            cacheSize = args[6] as String
+            autoWallpaperInterval = args[5] as Int,
+            categories = args[6] as List<WallpaperCategory>,
+            cacheSize = args[7] as String
         )
     }.stateIn(
         scope = viewModelScope,
@@ -137,12 +140,13 @@ class SettingsViewModel @Inject constructor(
     }
 
     private fun scheduleAutoWallpaper(source: AutoWallpaperSource, categoryId: Int?) {
+        val intervalHours = uiState.value.autoWallpaperInterval
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
 
         val workRequest = PeriodicWorkRequestBuilder<AutoWallpaperWorker>(
-            4, TimeUnit.HOURS
+            intervalHours.toLong(), TimeUnit.HOURS
         ).setConstraints(constraints)
             .build()
 
@@ -151,5 +155,17 @@ class SettingsViewModel @Inject constructor(
             ExistingPeriodicWorkPolicy.REPLACE,
             workRequest
         )
+    }
+
+    fun setAutoWallpaperInterval(hours: Int) {
+        viewModelScope.launch {
+            settingsManager.setAutoWallpaperInterval(hours)
+            if (uiState.value.autoWallpaper) {
+                scheduleAutoWallpaper(
+                    source = uiState.value.autoWallpaperSource,
+                    categoryId = uiState.value.autoWallpaperCategoryId
+                )
+            }
+        }
     }
 }

@@ -37,9 +37,12 @@ import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
+import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Wallpaper
+import androidx.compose.material.icons.rounded.Warning
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
@@ -206,22 +209,78 @@ fun PreviewRoute(
     )
 
     if (showSetSheet) {
-        ModalBottomSheet(onDismissRequest = { showSetSheet = false }) {
+        ModalBottomSheet(
+            onDismissRequest = { showSetSheet = false },
+            containerColor = MaterialTheme.colorScheme.surface,
+            dragHandle = {
+                Surface(
+                    modifier = Modifier.padding(vertical = 12.dp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                    shape = MaterialTheme.shapes.extraLarge
+                ) {
+                    Box(modifier = Modifier.size(width = 32.dp, height = 4.dp))
+                }
+            }
+        ) {
             Column(
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                WallpaperTarget.entries.forEach { target ->
-                    FilledTonalButton(
-                        onClick = {
-                            showSetSheet = false
-                            val actualPage = pagerState.currentPage % state.items.size
-                            viewModel.applyWallpaper(actualPage, target)
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        contentPadding = PaddingValues(vertical = 16.dp),
-                    ) {
-                        Text(target.label)
+                Text(
+                    text = "Set Wallpaper",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 24.dp)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    WallpaperTarget.entries.forEach { target ->
+                        val icon = when (target) {
+                            WallpaperTarget.HOME -> Icons.Rounded.Home
+                            WallpaperTarget.LOCK -> Icons.Rounded.Lock
+                            WallpaperTarget.BOTH -> Icons.Rounded.Wallpaper
+                        }
+
+                        Surface(
+                            onClick = {
+                                showSetSheet = false
+                                val actualPage = pagerState.currentPage % state.items.size
+                                viewModel.applyWallpaper(actualPage, target)
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(20.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(vertical = 20.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                                Text(
+                                    text = target.label.replace(" screen", ""),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -252,6 +311,7 @@ fun PreviewRoute(
                 val isLocked = wallpaper.isPremium && !wallpaper.isUnlocked
 
                 var isLoaded by remember(wallpaper.id) { mutableStateOf(false) }
+                var retryCount by remember(wallpaper.id) { mutableStateOf(0) }
 
                 val transformation = state.transformations[actualPage] ?: ImageTransformation()
                 val currentTransformationState = rememberUpdatedState(transformation)
@@ -340,9 +400,13 @@ fun PreviewRoute(
                     SubcomposeAsyncImage(
                         model = ImageRequest.Builder(context)
                             .data(if (isLocked) wallpaper.thumbnailUrl else wallpaper.imageUrl)
+                            .apply {
+                                if (retryCount > 0) {
+                                    // Use a unique memory cache key to force reload if retried
+                                    memoryCacheKey("${wallpaper.id}_retry_$retryCount")
+                                }
+                            }
                             .crossfade(true)
-                            .diskCachePolicy(CachePolicy.ENABLED)
-                            .memoryCachePolicy(CachePolicy.ENABLED)
                             .build(),
                         contentDescription = wallpaper.title,
                         modifier = sharedImageModifier,
@@ -415,11 +479,23 @@ fun PreviewRoute(
                                     modifier = Modifier.size(48.dp)
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    "Failed to load image",
-                                    color = Color.White.copy(alpha = 0.5f),
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                androidx.compose.material3.Button(
+                                    onClick = { retryCount++ },
+                                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                        containerColor = Color.White.copy(alpha = 0.2f),
+                                        contentColor = Color.White
+                                    ),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Refresh,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Retry")
+                                }
                             }
                         }
                     )
@@ -810,6 +886,9 @@ fun PreviewRoute(
                     activity = activity,
                     onReward = {
                         viewModel.unlockWallpaper(wallpaper)
+                    },
+                    onError = { message ->
+                        android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_LONG).show()
                     }
                 )
             }
